@@ -23,14 +23,14 @@ List InitialiseData(IntegerVector t_a, IntegerVector t_c, IntegerVector t_d, Int
       zero_based_source[i]--;
     }
   }
-  
+
   int num_patients = t_c.length();
   IntegerVector hcw_loc = WhichVec(1, hcw_ind);
   if(hcw_loc.length() > 0) {
     num_patients = hcw_loc[0];
-  } 
-  
-  List data = List::create(Named("t_a") = t_a , 
+  }
+
+  List data = List::create(Named("t_a") = t_a ,
                            Named("t_c") = t_c,
                            Named("t_d") = t_d,
                            Named("source") = zero_based_source,
@@ -40,10 +40,9 @@ List InitialiseData(IntegerVector t_a, IntegerVector t_c, IntegerVector t_d, Int
   return data;
 }
 
-
 // [[Rcpp::export]]
-List InitialiseData_GEN(int sequence_length, IntegerVector t_a, IntegerVector t_c, IntegerVector t_d, IntegerVector source, IntegerVector hcw_ind, 
-                        IntegerMatrix screening_matrix, IntegerVector genetic_ids, IntegerVector sample_times, IntegerVector variant_numbers, 
+List InitialiseData_GEN(int sequence_length, IntegerVector t_a, IntegerVector t_c, IntegerVector t_d, IntegerVector source, IntegerVector hcw_ind,
+                        IntegerMatrix screening_matrix, IntegerVector genetic_ids, IntegerVector sample_times, IntegerVector variant_numbers,
                         IntegerMatrix genetic_matrix)
 {
   Rcout << "good" << std::endl;
@@ -60,16 +59,15 @@ List InitialiseData_GEN(int sequence_length, IntegerVector t_a, IntegerVector t_
   {
     zero_based_genetic_id[i]--;
   }
-  
+
   int num_patients = t_c.length();
   IntegerVector hcw_loc = WhichVec(1, hcw_ind);
   if(hcw_loc.length() > 0) {
     num_patients = hcw_loc[0];
-  } 
-  
-  
+  }
+
   IntegerVector imputed_nodes(genetic_ids.length());
-  List data = List::create(Named("t_a") = t_a , 
+  List data = List::create(Named("t_a") = t_a ,
                            Named("t_c") = t_c,
                            Named("t_d") = t_d,
                            Named("source") = zero_based_source,
@@ -84,7 +82,6 @@ List InitialiseData_GEN(int sequence_length, IntegerVector t_a, IntegerVector t_
                            Named("hcw_ind") = hcw_ind);
   return data;
 }
-
 
 IntegerVector WhichVec(int x, IntegerVector vec)
 {
@@ -133,7 +130,7 @@ int SampleVector(IntegerVector x)
 IntegerVector SampleMultipleVector(IntegerVector x, int size)
 {
   if(size > x.length()) stop("Too few elements to sample");
-  
+
   IntegerVector out;
   for(int i = 0; i<size; i++)
   {
@@ -251,7 +248,7 @@ int CalculateDistanceBetweenNodes_Rcpp(int node1, int node2, IntegerVector gen_s
     IntegerVector temp_path = path1;
     path1 = path2;
     path2 = temp_path;
-    
+
     int temp_node = node1;
     node1 = node2;
     node2 = temp_node;
@@ -261,7 +258,7 @@ int CalculateDistanceBetweenNodes_Rcpp(int node1, int node2, IntegerVector gen_s
     Rcout << "path 1 = " << path1 << std::endl;
     Rcout << "path 2 = " << path2 << std::endl;
   }
-  
+
   // path 1 is longer or equal to path 2
   // Check if node 2 is contained in path 1
   IntegerVector node2_path1_loc = WhichVec(node2, path1);
@@ -278,7 +275,7 @@ int CalculateDistanceBetweenNodes_Rcpp(int node1, int node2, IntegerVector gen_s
     }
     return distance;
   }
-  
+
   // they are not contained in the path, therefore try to find the node of divergence
   int path1_loc, path2_loc;
   bool common_node_found = false;
@@ -295,8 +292,7 @@ int CalculateDistanceBetweenNodes_Rcpp(int node1, int node2, IntegerVector gen_s
       break;
     }
   }
-  
-  
+
   if(common_node_found)
   {
     int common_node = path2[path2_loc];
@@ -308,18 +304,18 @@ int CalculateDistanceBetweenNodes_Rcpp(int node1, int node2, IntegerVector gen_s
       distance += genetic_matrix(path1[path1_loc], path2[path2_loc]);
       if(print_debug) Rcout << "Adding nodes " << path1[path1_loc] << " and " << path2[path2_loc] << std::endl;
     }
-    
+
     for(int i = 0; i<path1_loc; i++)
     {
       distance += genetic_matrix(path1[i], path1[i+1]);
       if(print_debug) Rcout << "i = " << i << ", " << path1[i] << " -> " << path1[i+1] << ", dist = " << genetic_matrix(path1[i], path1[i+1]) << std::endl;
     }
-    
+
     for(int i = 0; i<path2_loc; i++)
     {
       distance += genetic_matrix(path2[i], path2[i+1]);
       if(print_debug) Rcout << "i = " << i << ", " << path1[i] << " -> " << path1[i+1] << ", dist = " << genetic_matrix(path1[i], path1[i+1]) << std::endl;
-      
+
     }
     return distance;
   }
@@ -329,7 +325,7 @@ int CalculateDistanceBetweenNodes_Rcpp(int node1, int node2, IntegerVector gen_s
     {
       distance += genetic_matrix(path1[i], path1[i+1]);
     }
-    
+
     for(int i = 0; i<path2.length()-1; i++)
     {
       distance += genetic_matrix(path2[i], path2[i+1]);
@@ -360,11 +356,11 @@ int hcw_col_pop(List data, int day)
   IntegerVector t_c = data["t_c"];
   IntegerVector t_d = data["t_d"];
   IntegerVector source = data["source"];
-  
+
   // Quick check to exit early if there are no hcw present
   //Rcout << std::endl << "num patients = " << num_patients << ", tc length = " << t_c.length() << std::endl;
   if(num_patients == t_c.length()) return 0;
-  
+
   for(int i = num_patients; i<t_c.length(); i++)
   {
     //Rcout << "Day = " << day << ", i = " << i << ", t_c = " << t_c[i] << ", t_d" << t_d[i] << std::endl;
@@ -444,8 +440,6 @@ double CalculateMutationProbability(double rate, double t)
   return prob;
 }
 
-
-
 double CalculateGeneticLikelihood(List data, NumericVector parameters)
 {
   double lambda = parameters[4];
@@ -516,7 +510,7 @@ double CalculateGeneticLikelihood(List data, NumericVector parameters)
           {
             loglik += R::dpois(dist, rate, 1);
           }
-          
+
         }
         else
         {
@@ -526,13 +520,11 @@ double CalculateGeneticLikelihood(List data, NumericVector parameters)
       }
     }
   }
-  
-  //Rcout << "Zero time counter = " << zero_time_counter << ", import length = " << import_idx.length() << " gen source = " 
+
+  //Rcout << "Zero time counter = " << zero_time_counter << ", import length = " << import_idx.length() << " gen source = "
   //      << gen_source << std::endl;
   return loglik;
 }
-
-
 
 double CalculateTransmissionLikelihood(List data, NumericVector parameters)
 {
@@ -549,7 +541,7 @@ double CalculateTransmissionLikelihood(List data, NumericVector parameters)
   {
     beta_h = parameters[3];
   }
-  
+
   for(int i = 0; i<num_patients; i++)
   {
     if(t_c[i] == -1)
@@ -580,7 +572,7 @@ double CalculateTransmissionLikelihood(List data, NumericVector parameters)
         //loglik += -1*log(hcw_col_pop(data,t_c[i])) + log(beta_h*hcw_col_pop(data,t_c[i])) - log(beta_p*col_pop(data,t_c[i]) + beta_h*hcw_col_pop(data,t_c[i]));
         loglik += log(beta_h);
       }
-      
+
     }
     else
     {
@@ -606,16 +598,13 @@ double CalculateTransmissionLikelihood(List data, NumericVector parameters)
     }
     if(print_details)
     {
-      Rcout << "i = " << i << ", loglik = " << loglik << ", col pop = " << col_pop(data,t_c[i]) 
+      Rcout << "i = " << i << ", loglik = " << loglik << ", col pop = " << col_pop(data,t_c[i])
             << ", hcw col pop " << hcw_col_pop(data,t_c[i]) << ", source = " << source[i] << std::endl;
     }
-    
-    
+
   }
   return loglik;
 }
-
-
 
 // [[Rcpp::export]]
 double CalculateLogLikelihood(List data, NumericVector parameters)
@@ -633,17 +622,17 @@ double CalculateLogLikelihood(List data, NumericVector parameters)
   }
   if(print_details)
   {
-    Rcout << "Screen loglik = " << screening_likelihood << ", import loglik = " << importation_likelihood << ", transmission loglik = " 
+    Rcout << "Screen loglik = " << screening_likelihood << ", import loglik = " << importation_likelihood << ", transmission loglik = "
           << transmission_likelihood << ", genetic loglik = " << genetic_likelihood << std::endl;
   }
   return loglik;
 }
 
 // [[Rcpp::export]]
-double CalculateLogLikelihood_R(NumericVector parameters, IntegerVector t_a, IntegerVector t_c, IntegerVector t_d, IntegerVector source, 
+double CalculateLogLikelihood_R(NumericVector parameters, IntegerVector t_a, IntegerVector t_c, IntegerVector t_d, IntegerVector source,
                                 IntegerVector hcw_ind, IntegerMatrix screening_matrix)
 {
-  
+
   List data = InitialiseData(t_a, t_c, t_d, source, hcw_ind, screening_matrix);
   bool print_details = true;
   double screening_likelihood = CalculateScreeningLikelihood(data, parameters);
@@ -652,12 +641,11 @@ double CalculateLogLikelihood_R(NumericVector parameters, IntegerVector t_a, Int
   double loglik = screening_likelihood + importation_likelihood + transmission_likelihood;
   if(print_details)
   {
-    Rcout << "Screen loglik = " << screening_likelihood << ", import loglik = " << importation_likelihood << ", transmission loglik = " 
+    Rcout << "Screen loglik = " << screening_likelihood << ", import loglik = " << importation_likelihood << ", transmission loglik = "
           << transmission_likelihood << std::endl;
   }
   return loglik;
 }
-
 
 // [[Rcpp::export]]
 IntegerVector ReturnGenSourceVector(List data)
@@ -685,17 +673,17 @@ IntegerVector ReturnGenSourceVector(List data)
 int ReturnSourceSequence(int sequence_loc, List data)
 {
   bool print_debug = false;
-  
+
   IntegerVector genetic_ids = data["genetic_ids"];
   IntegerVector source_vector = data["source"];
   IntegerVector sample_times = data["sample_times"];
   IntegerVector variant_numbers = data["variant_numbers"];
   IntegerVector t_c = data["t_c"];
-  
+
   if(print_debug) Rcout << "----- Sequence loc = " << sequence_loc << "\n";
-  
+
   // First check if there are any other sequences at the t
-  
+
   // first check if the sequence is a duplicate
   IntegerVector duplicated_sequences = ReturnDuplicateSequences(sequence_loc, data);
   if(print_debug) Rcout << "Duplicated sequences = " << duplicated_sequences << "\n";
@@ -713,7 +701,7 @@ int ReturnSourceSequence(int sequence_loc, List data)
       return duplicated_sequences[sequence_idx-1];
     }
   }
-  
+
   // now look back to find the most recent swab or infection
   int current_variant = variant_numbers[sequence_loc];
   IntegerVector variant_idx = WhichVec(current_variant, variant_numbers);
@@ -722,9 +710,9 @@ int ReturnSourceSequence(int sequence_loc, List data)
   bool sequence_found = false;
   int source_sequence = -1;
   if(print_debug) Rcout << "Target = " << target << ", sequence time = " << sequence_time << "\n";
-  
+
   // while the sequence is not found, look at the targets swabs and infection swabs at the time of infection until a sequence is found
-  
+
   // cowboy workaround, this needs to be fixed asap
   //int time_adjust_counter = 0;
   while(!sequence_found)
@@ -755,15 +743,15 @@ int ReturnSourceSequence(int sequence_loc, List data)
           }
         }
       }
-      
+
     }
-    
+
     if(sequence_found)
     {
       source_sequence = most_recent_source;
       break;
     }
-    
+
     // now check the infections at the same time
     IntegerVector target_infections = WhichVec(target, source_vector);
     if(print_debug) Rcout << "Target infections = " << target_infections << "\n";
@@ -800,14 +788,12 @@ int ReturnSourceSequence(int sequence_loc, List data)
               break;
             }
           }
-          
-          
+
         }
       }
     }
     if(print_debug) Rcout << "Most recent swab time = " << most_recent_time << ", most recent infection swab time = " << most_recent_inf_time << "\n";
-    
-    
+
     // check which was more recent, the swab or the swab of infections
     if(most_recent_time > most_recent_inf_time)
     {
@@ -817,10 +803,10 @@ int ReturnSourceSequence(int sequence_loc, List data)
     {
       source_sequence = most_recent_inf_source;
     }
-    
+
     IntegerVector source_loc_in_duplicated = WhichVec(source_sequence, duplicated_sequences);
     //if(source_loc_in_duplicated.length()>0) source_sequence = -1;
-    
+
     if(source_sequence != -1)
     {
       sequence_found = true;
@@ -830,17 +816,16 @@ int ReturnSourceSequence(int sequence_loc, List data)
       // couldnt find a sequence in the current target, look at the source
       sequence_time = t_c[target] + 1; // + 1 to account for at the same time
       target = source_vector[target];
-      
-      
+
       if(target==-1)
       {
         return -1;
       }
     }
   }
-  
+
   if(print_debug) Rcout << "Try to see if the sequence is a duplicate" << std::endl;
-  
+
   // now a sequence has been found, check if there are duplicates
   IntegerVector source_duplicates = ReturnDuplicateSequences(source_sequence, data);
   if(source_duplicates.length() > 0)
@@ -855,37 +840,36 @@ int ReturnSourceSequence(int sequence_loc, List data)
 
 IntegerVector ReturnDuplicateSequences(int sequence_loc, List data)
 {
-  // 
+  //
   bool print_details = false;
-  
+
   IntegerVector genetic_ids = data["genetic_ids"];
   IntegerVector source_vector = data["source"];
   IntegerVector sample_times = data["sample_times"];
   IntegerVector variant_numbers = data["variant_numbers"];
   IntegerVector t_c = data["t_c"];
-  
+
   // create a vector to store all the duplicates
   IntegerVector duplicated_sequences;
-  
+
   // first check if the sequence is at the time of infection
   int patient_id = genetic_ids[sequence_loc];
   int seq_sample_time = sample_times[sequence_loc];
   int current_variant = variant_numbers[sequence_loc];
   IntegerVector variant_loc = WhichVec(current_variant, variant_numbers);
   //int inf_time = t_c[patient_id];
-  
-  // check if there are 
+
+  // check if there are
   // (i) any other swabs at the time from the same patient
   // (ii) anyone who was infected by the target at the same time and also has a swab at that time (will only happen for imports)
   // (iii) any swabs from the source of infector
   // (iv) any swabs from other infections from the source
-  
+
   if(print_details)
   {
     Rcout << "Variant locs = " << variant_loc << std::endl;
   }
-  
-  
+
   // check other swabs (i)
   IntegerVector patient_swabs = WhichVec(patient_id, genetic_ids);
   IntegerVector patient_variant_swabs = intersect(patient_swabs, variant_loc);
@@ -898,13 +882,13 @@ IntegerVector ReturnDuplicateSequences(int sequence_loc, List data)
     Rcout << "Patient times = " << patient_times << std::endl;
     Rcout << "Swabs loc at time = " << swabs_loc_at_time << std::endl;
   }
-  
+
   for(int i = 0; i<swabs_loc_at_time.length(); i++)
   {
     int current_seq_idx = patient_variant_swabs[swabs_loc_at_time[i]];
     duplicated_sequences.push_back(current_seq_idx);
   }
-  
+
   // check anyone who was infected by the target at the same time
   IntegerVector patient_infections = WhichVec(patient_id, source_vector);
   for(int i = 0; i<patient_infections.length(); i++)
@@ -925,15 +909,15 @@ IntegerVector ReturnDuplicateSequences(int sequence_loc, List data)
       }
     }
   }
-  
+
   if(print_details)
   {
     Rcout << "After swabs, dup sequences = " << duplicated_sequences << std::endl;
   }
-  
+
   // check swabs from the source of infection, only if t_c = sequence time
   int patient_col_time = t_c[patient_id];
-  
+
   if(patient_col_time == seq_sample_time)
   {
     if(print_details) Rcout << "Checking the source of patient " << patient_id << std::endl;
@@ -961,12 +945,12 @@ IntegerVector ReturnDuplicateSequences(int sequence_loc, List data)
         duplicated_sequences.push_back(current_seq_idx);
       }
     }
-    
+
     if(print_details)
     {
       Rcout << "After swabs from source, dup sequences = " << duplicated_sequences << std::endl;
     }
-    
+
     // now check other infections from the source
     if(patient_source != -1)
     {
@@ -993,18 +977,13 @@ IntegerVector ReturnDuplicateSequences(int sequence_loc, List data)
         }
       }
     }
-    
-    
+
     if(print_details)
     {
       Rcout << "After swabs from source infections, dup sequences = " << duplicated_sequences << std::endl;
     }
   }
-  
-  
-  
-  
-  
+
   if(duplicated_sequences.length()>1)
   {
     if(print_details) Rcout << "Returning duplicate sequences = " << sort_unique(duplicated_sequences) << std::endl;
@@ -1016,8 +995,7 @@ IntegerVector ReturnDuplicateSequences(int sequence_loc, List data)
     if(print_details) Rcout << "Returning duplicate sequences = " << x << std::endl;
     return x;
   }
-  
-  
+
 }
 
 // [[Rcpp::export]]
@@ -1055,7 +1033,7 @@ List CalculateImportDistance(List data, NumericVector parameters) {
   int variant_distance_sum = 0;
   double import_counter = 0;
   double variant_import_counter = 0;
-  
+
   IntegerVector import_idx = WhichVec(-1, gen_source);
   //Rcout << "Import idx = " << import_idx << std::endl;
   for(int j = 1; j<import_idx.length(); j++)
@@ -1064,7 +1042,7 @@ List CalculateImportDistance(List data, NumericVector parameters) {
     {
       int ii = import_idx[i];
       int jj = import_idx[j];
-      if(variant_numbers[ii] == variant_numbers[jj]) 
+      if(variant_numbers[ii] == variant_numbers[jj])
       {
         //Rcout << "genetic_matrix(ii,jj) = " << genetic_matrix(ii,jj) << std::endl;
         distance_sum += genetic_matrix(ii,jj);
@@ -1077,14 +1055,13 @@ List CalculateImportDistance(List data, NumericVector parameters) {
       }
     }
   }
-  
+
   List out = List::create(Named("distance_sum") = distance_sum,
                           Named("import_counter") = import_counter,
                           Named("variant_distance_sum") = variant_distance_sum,
                           Named("variant_import_counter") = variant_import_counter);
   return out;
 }
-
 
 // Vq is the set of patients who tested positive during their stay
 IntegerVector CalculateVq(List data)
@@ -1122,7 +1099,6 @@ IntegerVector CalculateVs(List data)
   Rcout << "Calculated Vs" << std::endl;
   return Vs;
 }
-
 
 void UpdateTransmissionRate_P(List data, NumericVector &parameters, double &loglik_cur, double proposal_variance, double prior, int &nacc)
 {
@@ -1235,7 +1211,7 @@ int ReturnLastDay(List data, int target)
       last_day = offspring_coltime - 1;// - 1;  // minus one because you can only infect someone on the day before
     }
   }
-  
+
   IntegerVector screening_row = screening_matrix(target,_);
   IntegerVector positive_days = WhichVec(1,screening_row);
   //Rcout << "positive days = " << positive_days << std::endl;
@@ -1248,7 +1224,7 @@ int ReturnLastDay(List data, int target)
     }
   }
   //Rcout << ", last day = " << last_day << std::endl;
-  
+
   return last_day;
 }
 
@@ -1273,7 +1249,7 @@ IntegerVector ReturnPossibleInfectors(List data, int target)
   IntegerVector t_d = data["t_d"];
   IntegerVector source = data["source"];
   IntegerVector possible_infectors;
-  
+
   int num_patients = data["num_patients"];
   int day_of_colonisation = t_c[target];
   for(int i = 0; i<num_patients; i++)
@@ -1290,7 +1266,7 @@ IntegerVector ReturnPossibleInfectors(List data, int target)
       }
     }
   }
-  
+
   // Now check HCWs
   for(int i = num_patients; i<t_c.length(); i++)
   {
@@ -1299,8 +1275,7 @@ IntegerVector ReturnPossibleInfectors(List data, int target)
       possible_infectors.push_back(i);
     }
   }
-  
-  
+
   return possible_infectors;
 }
 
@@ -1310,7 +1285,7 @@ IntegerVector ReturnPossibleInfectors_patient(List data, int target)
   IntegerVector t_d = data["t_d"];
   IntegerVector source = data["source"];
   IntegerVector possible_infectors;
-  
+
   int num_patients = data["num_patients"];
   int day_of_colonisation = t_c[target];
   for(int i = 0; i<num_patients; i++)
@@ -1327,7 +1302,7 @@ IntegerVector ReturnPossibleInfectors_patient(List data, int target)
       }
     }
   }
-  
+
   return possible_infectors;
 }
 
@@ -1337,7 +1312,7 @@ IntegerVector ReturnPossibleInfectors_hcw(List data, int target)
   IntegerVector t_d = data["t_d"];
   IntegerVector source = data["source"];
   IntegerVector possible_infectors;
-  
+
   int num_patients = data["num_patients"];
   int day_of_colonisation = t_c[target];
   // Now check HCWs
@@ -1348,7 +1323,7 @@ IntegerVector ReturnPossibleInfectors_hcw(List data, int target)
       possible_infectors.push_back(i);
     }
   }
-  
+
   return possible_infectors;
 }
 
@@ -1356,20 +1331,20 @@ List MoveColonisationTimeGenetic(List &data, NumericVector parameters, double &l
 {
   bool print_details = false;
   bool write_details_to_file = true;
-  
+
   IntegerVector t_a = data["t_a"];
   IntegerVector t_d = data["t_d"];
   IntegerVector t_c = data["t_c"];
   IntegerVector source = data["source"];
-  
+
   List data_can = clone(data);
   IntegerVector t_c_can = data_can["t_c"];
   IntegerVector source_can = data_can["source"];
-  
+
   IntegerVector colonised_population = union_(Vq,Va);
   int target = SampleVector(colonised_population);
   int last_day = ReturnLastDay(data, target);
-  
+
   double log_prop_ratio = 0.0;
   double U = R::runif(0.0,1.0);
   if(U < w)
@@ -1408,11 +1383,11 @@ List MoveColonisationTimeGenetic(List &data, NumericVector parameters, double &l
       log_prop_ratio = log(w) + log(last_day - t_a[target] + 1) - log(1-w) + log(total_col_pop(data_can, t_c_can[target]));
     }
   }
-  
+
   //if(t_c[target] == t_c_can[target] && source[target] == source_can[target]) return;
-  
+
   bool impute_distances = true;
-  
+
   if(data.containsElementNamed("genetic_ids") && impute_distances)
   {
     //data_can = UpdateImputedNodesMove3(data, data_can, parameters, target);
@@ -1425,8 +1400,7 @@ List MoveColonisationTimeGenetic(List &data, NumericVector parameters, double &l
     }
     log_prop_ratio += genetic_contribution;
   }
-  
-  
+
   double loglik_can = CalculateLogLikelihood(data_can, parameters);
   U = R::runif(0.0,1.0);
   if(print_details)
@@ -1435,35 +1409,35 @@ List MoveColonisationTimeGenetic(List &data, NumericVector parameters, double &l
           << " from source " << source[target] << " to source " << source_can[target] << std::endl;
     Rcout << "Loglik can = " << loglik_can << ", loglik cur = " << loglik_cur << ", log prop ratio = " << log_prop_ratio;
   }
-  
+
   if(write_details_to_file)
   {
     myfile << "MOVE ID = " << target << " from time t = " << t_c[target] << " to t = " << t_c_can[target]
            << " from source " << source[target] << " to source " << source_can[target] << std::endl;
     myfile << "Loglik can = " << loglik_can << ", loglik cur = " << loglik_cur << ", log prop ratio = " << log_prop_ratio << std::endl;
-    
+
     double transmission_ll_cur = CalculateTransmissionLikelihood(data, parameters);
     double transmission_ll_can = CalculateTransmissionLikelihood(data_can, parameters);
-    
+
     double screening_ll_cur = CalculateScreeningLikelihood(data, parameters);
     double screening_ll_can = CalculateScreeningLikelihood(data_can, parameters);
-    
+
     double import_ll_cur = CalculateImportationLikelihood(data, parameters);
     double import_ll_can = CalculateImportationLikelihood(data_can, parameters);
-    
+
     double genetic_ll_cur = CalculateGeneticLikelihood(data, parameters);
     double genetic_ll_can = CalculateGeneticLikelihood(data_can, parameters);
-    
+
     myfile << "screen ll cur = " << screening_ll_cur << ", import ll cur = " << import_ll_cur << ", transmission ll cur = "
            << transmission_ll_cur << ", genetic ll cur = " << genetic_ll_cur << std::endl;
     myfile << "screen ll can = " << screening_ll_can << ", import ll can = " << import_ll_can << ", transmission ll can = "
            << transmission_ll_can << ", genetic ll can = " << genetic_ll_can << std::endl;
-    
+
     IntegerVector gen_source_cur = ReturnGenSourceVector(data);
     IntegerVector gen_source_can = ReturnGenSourceVector(data_can);
-    
+
     myfile << "       Gen source cur = ";
-    
+
     for(int i = 0; i<gen_source_cur.length(); i++)
     {
       int current_gen_source = gen_source_cur[i];
@@ -1481,8 +1455,7 @@ List MoveColonisationTimeGenetic(List &data, NumericVector parameters, double &l
       }
     }
     myfile << std::endl;
-    
-    
+
     myfile << "       Gen source can = ";
     for(int i = 0; i<gen_source_can.length(); i++)
     {
@@ -1501,10 +1474,10 @@ List MoveColonisationTimeGenetic(List &data, NumericVector parameters, double &l
       }
     }
     myfile << std::endl;
-    
+
     IntegerMatrix gen_matrix_cur = data["genetic_matrix"];
     IntegerMatrix gen_matrix_can = data_can["genetic_matrix"];
-    
+
     myfile << "observed distance cur = ";
     for(int i = 0; i<gen_source_cur.length(); i++)
     {
@@ -1523,11 +1496,11 @@ List MoveColonisationTimeGenetic(List &data, NumericVector parameters, double &l
       }
       else
       {
-        myfile << "-1 "; 
+        myfile << "-1 ";
       }
     }
     myfile << std::endl;
-    
+
     myfile << "observed distance can = ";
     for(int i = 0; i<gen_source_can.length(); i++)
     {
@@ -1546,11 +1519,11 @@ List MoveColonisationTimeGenetic(List &data, NumericVector parameters, double &l
       }
       else
       {
-        myfile << "-1 "; 
+        myfile << "-1 ";
       }
     }
     myfile << std::endl;
-    
+
     IntegerVector sample_times_cur = data["sample_times"];
     IntegerVector sample_times_can = data_can["sample_times"];
     myfile << "     sample times cur = ";
@@ -1568,7 +1541,7 @@ List MoveColonisationTimeGenetic(List &data, NumericVector parameters, double &l
         {
           myfile << time_diff << " ";
         }
-        
+
       }
       else
       {
@@ -1576,7 +1549,7 @@ List MoveColonisationTimeGenetic(List &data, NumericVector parameters, double &l
       }
     }
     myfile << std::endl;
-    
+
     myfile << "     sample times can = ";
     for(int i = 0; i<sample_times_can.length(); i++)
     {
@@ -1599,20 +1572,19 @@ List MoveColonisationTimeGenetic(List &data, NumericVector parameters, double &l
       }
     }
     myfile << std::endl;
-    
+
     myfile << "- Current Transmission tree - " << std::endl;
     myfile << t_a << std::endl;
     myfile << t_c << std::endl;
     myfile << t_d << std::endl;
     myfile << source << std::endl;
-    
+
     IntegerVector genetic_ids = data["genetic_ids"];
     IntegerVector sample_times = data["sample_times"];
     myfile << genetic_ids << std::endl;
     myfile << sample_times << std::endl;
   }
-  
-  
+
   if(log(U) < loglik_can - loglik_cur + log_prop_ratio)
   {
     //data = data_can;
@@ -1628,31 +1600,30 @@ List MoveColonisationTimeGenetic(List &data, NumericVector parameters, double &l
     if(write_details_to_file) myfile << " - rejected." << std::endl << std::endl;
     return data;
   }
-  
-}
 
+}
 
 List MoveMultipleColonisationTimeGenetic(List data, NumericVector parameters, double &loglik_cur, double w, IntegerVector Vq, IntegerVector Va, int &nacc_move, std::ofstream &myfile)
 {
   bool print_details = false;
   bool write_details_to_file = true;
-  
+
   IntegerVector t_a = data["t_a"];
   IntegerVector t_d = data["t_d"];
   IntegerVector t_c = data["t_c"];
   IntegerVector source = data["source"];
-  
+
   List data_cur = clone(data);
-  
+
   List data_can = clone(data);
   IntegerVector t_c_can = data_can["t_c"];
   IntegerVector source_can = data_can["source"];
-  
+
   IntegerVector colonised_population = union_(Vq,Va);
   //IntegerVector targets = SampleMultipleVector(colonised_population, 3);
   IntegerVector targets = {62,59,56};
   double log_prop_ratio = 0.0;
-  
+
   for(int i = 0; i<targets.length(); i++)
   {
     int target = targets[i];
@@ -1703,12 +1674,10 @@ List MoveMultipleColonisationTimeGenetic(List data, NumericVector parameters, do
     data_cur = data_can;
   }
 
-
-  
   //if(t_c[target] == t_c_can[target] && source[target] == source_can[target]) return;
-  
+
   bool impute_distances = true;
-  
+
   if(data.containsElementNamed("genetic_ids") && impute_distances)
   {
     //data_can = UpdateImputedNodesMove3(data, data_can, parameters, target);
@@ -1721,8 +1690,7 @@ List MoveMultipleColonisationTimeGenetic(List data, NumericVector parameters, do
     }
     log_prop_ratio += genetic_contribution;
   }
-  
-  
+
   double loglik_can = CalculateLogLikelihood(data_can, parameters);
   double U = R::runif(0.0,1.0);
   if(print_details)
@@ -1730,7 +1698,7 @@ List MoveMultipleColonisationTimeGenetic(List data, NumericVector parameters, do
     Rcout << "MOVE TARGETS = " << targets << std::endl;
     Rcout << "Loglik can = " << loglik_can << ", loglik cur = " << loglik_cur << ", log prop ratio = " << log_prop_ratio;
   }
-  
+
   if(write_details_to_file)
   {
     myfile << "MOVE TARGETS = " << targets << std::endl;
@@ -1739,37 +1707,37 @@ List MoveMultipleColonisationTimeGenetic(List data, NumericVector parameters, do
     myfile << "Target = 59, t_c_can = " << t_c_can[59] << ", source_can = " << source_can[59] << std::endl;
     myfile << "Target = 62, t_c_can = " << t_c_can[62] << ", source_can = " << source_can[62] << std::endl;
     myfile << "Loglik can = " << loglik_can << ", loglik cur = " << loglik_cur << ", log prop ratio = " << log_prop_ratio << std::endl;
-    
+
     myfile << "Target = 56, t_c = " << t_c[56] << ", source = " << source[56] << std::endl;
     myfile << "Target = 59, t_c = " << t_c[59] << ", source = " << source[59] << std::endl;
     myfile << "Target = 62, t_c = " << t_c[62] << ", source = " << source[62] << std::endl;
-    
+
     double transmission_ll_cur = CalculateTransmissionLikelihood(data, parameters);
     double transmission_ll_can = CalculateTransmissionLikelihood(data_can, parameters);
-    
+
     double screening_ll_cur = CalculateScreeningLikelihood(data, parameters);
     double screening_ll_can = CalculateScreeningLikelihood(data_can, parameters);
-    
+
     double import_ll_cur = CalculateImportationLikelihood(data, parameters);
     double import_ll_can = CalculateImportationLikelihood(data_can, parameters);
-    
+
     double genetic_ll_cur = CalculateGeneticLikelihood(data, parameters);
     double genetic_ll_can = CalculateGeneticLikelihood(data_can, parameters);
-    
+
     myfile << "screen ll cur = " << screening_ll_cur << ", import ll cur = " << import_ll_cur << ", transmission ll cur = "
            << transmission_ll_cur << ", genetic ll cur = " << genetic_ll_cur << std::endl;
     myfile << "screen ll can = " << screening_ll_can << ", import ll can = " << import_ll_can << ", transmission ll can = "
            << transmission_ll_can << ", genetic ll can = " << genetic_ll_can << std::endl;
-    
+
     IntegerVector gen_source_cur = ReturnGenSourceVector(data);
     IntegerVector gen_source_can = ReturnGenSourceVector(data_can);
-    
+
     myfile << "Gen source cur = " << gen_source_cur << std::endl;
     myfile << "Gen source can = " << gen_source_can << std::endl;
-    
+
     IntegerMatrix gen_matrix_cur = data["genetic_matrix"];
     IntegerMatrix gen_matrix_can = data_can["genetic_matrix"];
-    
+
     myfile << "observed distance cur = ";
     for(int i = 0; i<gen_source_cur.length(); i++)
     {
@@ -1780,12 +1748,12 @@ List MoveMultipleColonisationTimeGenetic(List data, NumericVector parameters, do
       }
       else
       {
-        myfile << "-1 "; 
+        myfile << "-1 ";
       }
-      
+
     }
     myfile << std::endl;
-    
+
     myfile << "observed distance can = ";
     for(int i = 0; i<gen_source_can.length(); i++)
     {
@@ -1800,7 +1768,7 @@ List MoveMultipleColonisationTimeGenetic(List data, NumericVector parameters, do
       }
     }
     myfile << std::endl;
-    
+
     IntegerVector sample_times_cur = data["sample_times"];
     IntegerVector sample_times_can = data_can["sample_times"];
     myfile << "sample times cur = ";
@@ -1818,7 +1786,7 @@ List MoveMultipleColonisationTimeGenetic(List data, NumericVector parameters, do
       }
     }
     myfile << std::endl;
-    
+
     myfile << "sample times can = ";
     for(int i = 0; i<sample_times_can.length(); i++)
     {
@@ -1835,8 +1803,7 @@ List MoveMultipleColonisationTimeGenetic(List data, NumericVector parameters, do
     }
     myfile << std::endl;
   }
-  
-  
+
   if(log(U) < loglik_can - loglik_cur + log_prop_ratio)
   {
     //data = data_can;
@@ -1852,7 +1819,7 @@ List MoveMultipleColonisationTimeGenetic(List data, NumericVector parameters, do
     if(write_details_to_file) myfile << " - rejected." << std::endl << std::endl;
     return data;
   }
-  
+
 }
 
 // Update a source without changing the time of colonisation
@@ -1860,30 +1827,30 @@ List UpdateSource(List &data, NumericVector parameters, double &loglik_cur, doub
 {
   bool print_details = false;
   bool write_details_to_file = true;
-  
+
   IntegerVector t_a = data["t_a"];
   IntegerVector t_d = data["t_d"];
   IntegerVector t_c = data["t_c"];
   IntegerVector source = data["source"];
-  
+
   List data_can = clone(data);
   //IntegerVector t_c_can = data_can["t_c"];
   IntegerVector source_can = data_can["source"];
-  
+
   IntegerVector colonised_population = union_(Vq,Va);
   int target = SampleVector(colonised_population);
   //int last_day = ReturnLastDay(data, target);
-  
+
   double log_prop_ratio = 0.0;
-  
+
   if(source[target] == -1) return data;
-  
+
   IntegerVector possible_infectors = ReturnPossibleInfectors(data_can, target);
   if(possible_infectors.length()==0) return data;
   source_can[target] = SampleVector(possible_infectors);
-  
+
   bool impute_distances = true;
-  
+
   if(data.containsElementNamed("genetic_ids") && impute_distances)
   {
     //data_can = UpdateImputedNodesMove3(data, data_can, parameters, target);
@@ -1896,8 +1863,7 @@ List UpdateSource(List &data, NumericVector parameters, double &loglik_cur, doub
     }
     log_prop_ratio += genetic_contribution;
   }
-  
-  
+
   double loglik_can = CalculateLogLikelihood(data_can, parameters);
   double U = R::runif(0.0,1.0);
   if(print_details)
@@ -1905,38 +1871,38 @@ List UpdateSource(List &data, NumericVector parameters, double &loglik_cur, doub
     Rcout << "CHANGE SOURCE ID = " << target << " from source " << source[target] << " to source " << source_can[target] << std::endl;
     Rcout << "Loglik can = " << loglik_can << ", loglik cur = " << loglik_cur << ", log prop ratio = " << log_prop_ratio;
   }
-  
+
   if(write_details_to_file)
   {
     myfile << "CHANGE SOURCE ID = " << target << " from source " << source[target] << " to source " << source_can[target] << std::endl;
     myfile << "Loglik can = " << loglik_can << ", loglik cur = " << loglik_cur << ", log prop ratio = " << log_prop_ratio << std::endl;
-    
+
     double transmission_ll_cur = CalculateTransmissionLikelihood(data, parameters);
     double transmission_ll_can = CalculateTransmissionLikelihood(data_can, parameters);
-    
+
     double screening_ll_cur = CalculateScreeningLikelihood(data, parameters);
     double screening_ll_can = CalculateScreeningLikelihood(data_can, parameters);
-    
+
     double import_ll_cur = CalculateImportationLikelihood(data, parameters);
     double import_ll_can = CalculateImportationLikelihood(data_can, parameters);
-    
+
     double genetic_ll_cur = CalculateGeneticLikelihood(data, parameters);
     double genetic_ll_can = CalculateGeneticLikelihood(data_can, parameters);
-    
+
     myfile << "screen ll cur = " << screening_ll_cur << ", import ll cur = " << import_ll_cur << ", transmission ll cur = "
            << transmission_ll_cur << ", genetic ll cur = " << genetic_ll_cur << std::endl;
     myfile << "screen ll can = " << screening_ll_can << ", import ll can = " << import_ll_can << ", transmission ll can = "
            << transmission_ll_can << ", genetic ll can = " << genetic_ll_can << std::endl;
-    
+
     IntegerVector gen_source_cur = ReturnGenSourceVector(data);
     IntegerVector gen_source_can = ReturnGenSourceVector(data_can);
-    
+
     myfile << "Gen source cur = " << gen_source_cur << std::endl;
     myfile << "Gen source can = " << gen_source_can << std::endl;
-    
+
     IntegerMatrix gen_matrix_cur = data["genetic_matrix"];
     IntegerMatrix gen_matrix_can = data_can["genetic_matrix"];
-    
+
     myfile << "observed distance cur = ";
     for(int i = 0; i<gen_source_cur.length(); i++)
     {
@@ -1947,12 +1913,12 @@ List UpdateSource(List &data, NumericVector parameters, double &loglik_cur, doub
       }
       else
       {
-        myfile << "-1 "; 
+        myfile << "-1 ";
       }
-      
+
     }
     myfile << std::endl;
-    
+
     myfile << "observed distance can = ";
     for(int i = 0; i<gen_source_can.length(); i++)
     {
@@ -1967,7 +1933,7 @@ List UpdateSource(List &data, NumericVector parameters, double &loglik_cur, doub
       }
     }
     myfile << std::endl;
-    
+
     IntegerVector sample_times_cur = data["sample_times"];
     IntegerVector sample_times_can = data_can["sample_times"];
     myfile << "sample times cur = ";
@@ -1985,7 +1951,7 @@ List UpdateSource(List &data, NumericVector parameters, double &loglik_cur, doub
       }
     }
     myfile << std::endl;
-    
+
     myfile << "sample times can = ";
     for(int i = 0; i<sample_times_can.length(); i++)
     {
@@ -2002,8 +1968,7 @@ List UpdateSource(List &data, NumericVector parameters, double &loglik_cur, doub
     }
     myfile << std::endl;
   }
-  
-  
+
   if(log(U) < loglik_can - loglik_cur + log_prop_ratio)
   {
     //data = data_can;
@@ -2019,25 +1984,24 @@ List UpdateSource(List &data, NumericVector parameters, double &loglik_cur, doub
     if(write_details_to_file) myfile << " - rejected." << std::endl << std::endl;
     return data;
   }
-  
-}
 
+}
 
 // Update all sources without changing the time of colonisation
 List UpdateAllSources(List &data, NumericVector parameters, double &loglik_cur, double w, IntegerVector Vq, IntegerVector Va, int &nacc_move, std::ofstream &myfile)
 {
   bool print_details = false;
   bool write_details_to_file = true;
-  
+
   IntegerVector t_a = data["t_a"];
   IntegerVector t_d = data["t_d"];
   IntegerVector t_c = data["t_c"];
   IntegerVector source = data["source"];
-  
+
   List data_can = clone(data);
   //IntegerVector t_c_can = data_can["t_c"];
   IntegerVector source_can = data_can["source"];
-  
+
   IntegerVector colonised_population = union_(Vq,Va);
   double log_prop_ratio = 0.0;
   for(int i = 0; i<colonised_population.length(); i++)
@@ -2062,13 +2026,9 @@ List UpdateAllSources(List &data, NumericVector parameters, double &loglik_cur, 
       }
     }
   }
-  
-  
 
-
-  
   bool impute_distances = true;
-  
+
   if(data.containsElementNamed("genetic_ids") && impute_distances)
   {
     //data_can = UpdateImputedNodesMove3(data, data_can, parameters, target);
@@ -2081,8 +2041,7 @@ List UpdateAllSources(List &data, NumericVector parameters, double &loglik_cur, 
     }
     log_prop_ratio += genetic_contribution;
   }
-  
-  
+
   double loglik_can = CalculateLogLikelihood(data_can, parameters);
   double U = R::runif(0.0,1.0);
   if(print_details)
@@ -2090,34 +2049,34 @@ List UpdateAllSources(List &data, NumericVector parameters, double &loglik_cur, 
     Rcout << "UPDATE ALL SOURCES" << std::endl;
     Rcout << "Loglik can = " << loglik_can << ", loglik cur = " << loglik_cur << ", log prop ratio = " << log_prop_ratio;
   }
-  
+
   if(write_details_to_file)
   {
     myfile << "UPDATE ALL SOURCES" << std::endl;
     myfile << "Loglik can = " << loglik_can << ", loglik cur = " << loglik_cur << ", log prop ratio = " << log_prop_ratio << std::endl;
-    
+
     double transmission_ll_cur = CalculateTransmissionLikelihood(data, parameters);
     double transmission_ll_can = CalculateTransmissionLikelihood(data_can, parameters);
-    
+
     double screening_ll_cur = CalculateScreeningLikelihood(data, parameters);
     double screening_ll_can = CalculateScreeningLikelihood(data_can, parameters);
-    
+
     double import_ll_cur = CalculateImportationLikelihood(data, parameters);
     double import_ll_can = CalculateImportationLikelihood(data_can, parameters);
-    
+
     double genetic_ll_cur = CalculateGeneticLikelihood(data, parameters);
     double genetic_ll_can = CalculateGeneticLikelihood(data_can, parameters);
-    
+
     myfile << "screen ll cur = " << screening_ll_cur << ", import ll cur = " << import_ll_cur << ", transmission ll cur = "
            << transmission_ll_cur << ", genetic ll cur = " << genetic_ll_cur << std::endl;
     myfile << "screen ll can = " << screening_ll_can << ", import ll can = " << import_ll_can << ", transmission ll can = "
            << transmission_ll_can << ", genetic ll can = " << genetic_ll_can << std::endl;
-    
+
     IntegerVector gen_source_cur = ReturnGenSourceVector(data);
     IntegerVector gen_source_can = ReturnGenSourceVector(data_can);
-    
+
     myfile << "       Gen source cur = ";
-    
+
     for(int i = 0; i<gen_source_cur.length(); i++)
     {
       int current_gen_source = gen_source_cur[i];
@@ -2135,8 +2094,7 @@ List UpdateAllSources(List &data, NumericVector parameters, double &loglik_cur, 
       }
     }
     myfile << std::endl;
-    
-    
+
     myfile << "       Gen source can = ";
     for(int i = 0; i<gen_source_can.length(); i++)
     {
@@ -2155,10 +2113,10 @@ List UpdateAllSources(List &data, NumericVector parameters, double &loglik_cur, 
       }
     }
     myfile << std::endl;
-    
+
     IntegerMatrix gen_matrix_cur = data["genetic_matrix"];
     IntegerMatrix gen_matrix_can = data_can["genetic_matrix"];
-    
+
     myfile << "observed distance cur = ";
     for(int i = 0; i<gen_source_cur.length(); i++)
     {
@@ -2177,11 +2135,11 @@ List UpdateAllSources(List &data, NumericVector parameters, double &loglik_cur, 
       }
       else
       {
-        myfile << "-1 "; 
+        myfile << "-1 ";
       }
     }
     myfile << std::endl;
-    
+
     myfile << "observed distance can = ";
     for(int i = 0; i<gen_source_can.length(); i++)
     {
@@ -2200,11 +2158,11 @@ List UpdateAllSources(List &data, NumericVector parameters, double &loglik_cur, 
       }
       else
       {
-        myfile << "-1 "; 
+        myfile << "-1 ";
       }
     }
     myfile << std::endl;
-    
+
     IntegerVector sample_times_cur = data["sample_times"];
     IntegerVector sample_times_can = data_can["sample_times"];
     myfile << "     sample times cur = ";
@@ -2222,7 +2180,7 @@ List UpdateAllSources(List &data, NumericVector parameters, double &loglik_cur, 
         {
           myfile << time_diff << " ";
         }
-        
+
       }
       else
       {
@@ -2230,7 +2188,7 @@ List UpdateAllSources(List &data, NumericVector parameters, double &loglik_cur, 
       }
     }
     myfile << std::endl;
-    
+
     myfile << "     sample times can = ";
     for(int i = 0; i<sample_times_can.length(); i++)
     {
@@ -2254,8 +2212,7 @@ List UpdateAllSources(List &data, NumericVector parameters, double &loglik_cur, 
     }
     myfile << std::endl;
   }
-  
-  
+
   if(log(U) < loglik_can - loglik_cur + log_prop_ratio)
   {
     //data = data_can;
@@ -2271,28 +2228,26 @@ List UpdateAllSources(List &data, NumericVector parameters, double &loglik_cur, 
     if(write_details_to_file) myfile << " - rejected." << std::endl << std::endl;
     return data;
   }
-  
-}
 
+}
 
 // Update random number of  sources without changing the time of colonisation
 List UpdateRandomSources(List &data, NumericVector parameters, double &loglik_cur, double w, IntegerVector Vq, IntegerVector Va, int &nacc_move, std::ofstream &myfile)
 {
   bool print_details = false;
   bool write_details_to_file = true;
-  
+
   IntegerVector t_a = data["t_a"];
   IntegerVector t_d = data["t_d"];
   IntegerVector t_c = data["t_c"];
   IntegerVector source = data["source"];
-  
+
   List data_can = clone(data);
   //IntegerVector t_c_can = data_can["t_c"];
   IntegerVector source_can = data_can["source"];
-  
+
   IntegerVector colonised_population = union_(Vq,Va);
-  
-  
+
   int num_to_sample = SampleVector(seq(1,colonised_population.length()));
   IntegerVector targets_to_sample = SampleMultipleVector(colonised_population, num_to_sample);
   double log_prop_ratio = 0.0;
@@ -2318,13 +2273,9 @@ List UpdateRandomSources(List &data, NumericVector parameters, double &loglik_cu
       }
     }
   }
-  
-  
-  
-  
-  
+
   bool impute_distances = true;
-  
+
   if(data.containsElementNamed("genetic_ids") && impute_distances)
   {
     //data_can = UpdateImputedNodesMove3(data, data_can, parameters, target);
@@ -2337,8 +2288,7 @@ List UpdateRandomSources(List &data, NumericVector parameters, double &loglik_cu
     }
     log_prop_ratio += genetic_contribution;
   }
-  
-  
+
   double loglik_can = CalculateLogLikelihood(data_can, parameters);
   double U = R::runif(0.0,1.0);
   if(print_details)
@@ -2347,35 +2297,35 @@ List UpdateRandomSources(List &data, NumericVector parameters, double &loglik_cu
     Rcout << "SOURCES = " << targets_to_sample << std::endl;
     Rcout << "Loglik can = " << loglik_can << ", loglik cur = " << loglik_cur << ", log prop ratio = " << log_prop_ratio;
   }
-  
+
   if(write_details_to_file)
   {
     myfile << "UPDATE "<< num_to_sample << " SOURCES" << std::endl;
     myfile << "SOURCES = " << targets_to_sample << std::endl;
     myfile << "Loglik can = " << loglik_can << ", loglik cur = " << loglik_cur << ", log prop ratio = " << log_prop_ratio << std::endl;
-    
+
     double transmission_ll_cur = CalculateTransmissionLikelihood(data, parameters);
     double transmission_ll_can = CalculateTransmissionLikelihood(data_can, parameters);
-    
+
     double screening_ll_cur = CalculateScreeningLikelihood(data, parameters);
     double screening_ll_can = CalculateScreeningLikelihood(data_can, parameters);
-    
+
     double import_ll_cur = CalculateImportationLikelihood(data, parameters);
     double import_ll_can = CalculateImportationLikelihood(data_can, parameters);
-    
+
     double genetic_ll_cur = CalculateGeneticLikelihood(data, parameters);
     double genetic_ll_can = CalculateGeneticLikelihood(data_can, parameters);
-    
+
     myfile << "screen ll cur = " << screening_ll_cur << ", import ll cur = " << import_ll_cur << ", transmission ll cur = "
            << transmission_ll_cur << ", genetic ll cur = " << genetic_ll_cur << std::endl;
     myfile << "screen ll can = " << screening_ll_can << ", import ll can = " << import_ll_can << ", transmission ll can = "
            << transmission_ll_can << ", genetic ll can = " << genetic_ll_can << std::endl;
-    
+
     IntegerVector gen_source_cur = ReturnGenSourceVector(data);
     IntegerVector gen_source_can = ReturnGenSourceVector(data_can);
-    
+
     myfile << "       Gen source cur = ";
-    
+
     for(int i = 0; i<gen_source_cur.length(); i++)
     {
       int current_gen_source = gen_source_cur[i];
@@ -2393,8 +2343,7 @@ List UpdateRandomSources(List &data, NumericVector parameters, double &loglik_cu
       }
     }
     myfile << std::endl;
-    
-    
+
     myfile << "       Gen source can = ";
     for(int i = 0; i<gen_source_can.length(); i++)
     {
@@ -2413,10 +2362,10 @@ List UpdateRandomSources(List &data, NumericVector parameters, double &loglik_cu
       }
     }
     myfile << std::endl;
-    
+
     IntegerMatrix gen_matrix_cur = data["genetic_matrix"];
     IntegerMatrix gen_matrix_can = data_can["genetic_matrix"];
-    
+
     myfile << "observed distance cur = ";
     for(int i = 0; i<gen_source_cur.length(); i++)
     {
@@ -2435,11 +2384,11 @@ List UpdateRandomSources(List &data, NumericVector parameters, double &loglik_cu
       }
       else
       {
-        myfile << "-1 "; 
+        myfile << "-1 ";
       }
     }
     myfile << std::endl;
-    
+
     myfile << "observed distance can = ";
     for(int i = 0; i<gen_source_can.length(); i++)
     {
@@ -2458,11 +2407,11 @@ List UpdateRandomSources(List &data, NumericVector parameters, double &loglik_cu
       }
       else
       {
-        myfile << "-1 "; 
+        myfile << "-1 ";
       }
     }
     myfile << std::endl;
-    
+
     IntegerVector sample_times_cur = data["sample_times"];
     IntegerVector sample_times_can = data_can["sample_times"];
     myfile << "     sample times cur = ";
@@ -2480,7 +2429,7 @@ List UpdateRandomSources(List &data, NumericVector parameters, double &loglik_cu
         {
           myfile << time_diff << " ";
         }
-        
+
       }
       else
       {
@@ -2488,7 +2437,7 @@ List UpdateRandomSources(List &data, NumericVector parameters, double &loglik_cu
       }
     }
     myfile << std::endl;
-    
+
     myfile << "     sample times can = ";
     for(int i = 0; i<sample_times_can.length(); i++)
     {
@@ -2512,8 +2461,7 @@ List UpdateRandomSources(List &data, NumericVector parameters, double &loglik_cu
     }
     myfile << std::endl;
   }
-  
-  
+
   if(log(U) < loglik_can - loglik_cur + log_prop_ratio)
   {
     //data = data_can;
@@ -2529,59 +2477,55 @@ List UpdateRandomSources(List &data, NumericVector parameters, double &loglik_cu
     if(write_details_to_file) myfile << " - rejected." << std::endl << std::endl;
     return data;
   }
-  
-}
 
+}
 
 // Swap a target with their source
 List SwapTargetOffspring(List &data, NumericVector parameters, double &loglik_cur, double w, IntegerVector Vq, IntegerVector Va, int &nacc_move, std::ofstream &myfile)
 {
   bool print_details = false;
   bool write_details_to_file = true;
-  
+
   IntegerVector t_a = data["t_a"];
   IntegerVector t_d = data["t_d"];
   IntegerVector t_c = data["t_c"];
   IntegerVector source = data["source"];
-  
+
   List data_can = clone(data);
   IntegerVector t_c_can = data_can["t_c"];
   IntegerVector source_can = data_can["source"];
-  
+
   IntegerVector colonised_population = union_(Vq,Va);
   int target = SampleVector(colonised_population);
   int num_patients = data["num_patients"];
 
   //int last_day = ReturnLastDay(data, target);
-  
+
   bool print_debug = false;
   //if(target == 59 || target == 62 || target == 56) print_debug = true;
-  
+
   double log_prop_ratio = 0.0;
-  
+
   int target_source = source[target];
-  
+
   if(print_debug)
   {
     Rcout << "Target = " << target << ", source = " << target_source << " - attempt to swap" << std::endl;
   }
-  
+
   // remove if the source is an importation or has a source of hcw
   if(target_source == -1) return data;
   if(target_source >= num_patients) return data;
-  
+
   t_c_can[target] = t_c[target_source];
   t_c_can[target_source] = t_c[target];
-  
 
-  
   source_can[target] = source[target_source];
   source_can[target_source] = target;
-  
-  
+
   // Now check if the colonisation time of the source is before the admission of the target
   if(t_c_can[target] < t_a[target]) return data;
-  
+
   // Check if the colonisation time of the source is after the birth of another offspring or a swab
   IntegerVector source_infections = WhichVec(target_source, source);
   for(int i = 0; i<source_infections.length(); i++)
@@ -2596,7 +2540,7 @@ List SwapTargetOffspring(List &data, NumericVector parameters, double &loglik_cu
       }
     }
   }
-  
+
   IntegerMatrix screening_matrix = data["screening_matrix"];
   for(int i = 0; i<screening_matrix.ncol(); i++)
   {
@@ -2606,11 +2550,9 @@ List SwapTargetOffspring(List &data, NumericVector parameters, double &loglik_cu
       if(t_c_can[target_source] > i) return data;
     }
   }
-  
-  
-  
+
   bool impute_distances = true;
-  
+
   if(data.containsElementNamed("genetic_ids") && impute_distances)
   {
     //data_can = UpdateImputedNodesMove3(data, data_can, parameters, target);
@@ -2623,8 +2565,7 @@ List SwapTargetOffspring(List &data, NumericVector parameters, double &loglik_cu
     }
     log_prop_ratio += genetic_contribution;
   }
-  
-  
+
   double loglik_can = CalculateLogLikelihood(data_can, parameters);
   double U = R::runif(0.0,1.0);
   if(print_details)
@@ -2632,38 +2573,38 @@ List SwapTargetOffspring(List &data, NumericVector parameters, double &loglik_cu
     Rcout << "SWAP SOURCE OFFSPRING ID = " << target << " from source " << source[target] << " to source " << source_can[target] << std::endl;
     Rcout << "Loglik can = " << loglik_can << ", loglik cur = " << loglik_cur << ", log prop ratio = " << log_prop_ratio;
   }
-  
+
   if(write_details_to_file)
   {
     myfile << "SWAP SOURCE OFFSPRING ID = " << target << " from source " << source[target] << " to source " << source_can[target] << std::endl;
     myfile << "Loglik can = " << loglik_can << ", loglik cur = " << loglik_cur << ", log prop ratio = " << log_prop_ratio << std::endl;
-    
+
     double transmission_ll_cur = CalculateTransmissionLikelihood(data, parameters);
     double transmission_ll_can = CalculateTransmissionLikelihood(data_can, parameters);
-    
+
     double screening_ll_cur = CalculateScreeningLikelihood(data, parameters);
     double screening_ll_can = CalculateScreeningLikelihood(data_can, parameters);
-    
+
     double import_ll_cur = CalculateImportationLikelihood(data, parameters);
     double import_ll_can = CalculateImportationLikelihood(data_can, parameters);
-    
+
     double genetic_ll_cur = CalculateGeneticLikelihood(data, parameters);
     double genetic_ll_can = CalculateGeneticLikelihood(data_can, parameters);
-    
+
     myfile << "screen ll cur = " << screening_ll_cur << ", import ll cur = " << import_ll_cur << ", transmission ll cur = "
            << transmission_ll_cur << ", genetic ll cur = " << genetic_ll_cur << std::endl;
     myfile << "screen ll can = " << screening_ll_can << ", import ll can = " << import_ll_can << ", transmission ll can = "
            << transmission_ll_can << ", genetic ll can = " << genetic_ll_can << std::endl;
-    
+
     IntegerVector gen_source_cur = ReturnGenSourceVector(data);
     IntegerVector gen_source_can = ReturnGenSourceVector(data_can);
-    
+
     myfile << "Gen source cur = " << gen_source_cur << std::endl;
     myfile << "Gen source can = " << gen_source_can << std::endl;
-    
+
     IntegerMatrix gen_matrix_cur = data["genetic_matrix"];
     IntegerMatrix gen_matrix_can = data_can["genetic_matrix"];
-    
+
     myfile << "observed distance cur = ";
     for(int i = 0; i<gen_source_cur.length(); i++)
     {
@@ -2674,12 +2615,12 @@ List SwapTargetOffspring(List &data, NumericVector parameters, double &loglik_cu
       }
       else
       {
-        myfile << "-1 "; 
+        myfile << "-1 ";
       }
-      
+
     }
     myfile << std::endl;
-    
+
     myfile << "observed distance can = ";
     for(int i = 0; i<gen_source_can.length(); i++)
     {
@@ -2694,7 +2635,7 @@ List SwapTargetOffspring(List &data, NumericVector parameters, double &loglik_cu
       }
     }
     myfile << std::endl;
-    
+
     IntegerVector sample_times_cur = data["sample_times"];
     IntegerVector sample_times_can = data_can["sample_times"];
     myfile << "sample times cur = ";
@@ -2712,7 +2653,7 @@ List SwapTargetOffspring(List &data, NumericVector parameters, double &loglik_cu
       }
     }
     myfile << std::endl;
-    
+
     myfile << "sample times can = ";
     for(int i = 0; i<sample_times_can.length(); i++)
     {
@@ -2729,8 +2670,7 @@ List SwapTargetOffspring(List &data, NumericVector parameters, double &loglik_cu
     }
     myfile << std::endl;
   }
-  
-  
+
   if(log(U) < loglik_can - loglik_cur + log_prop_ratio)
   {
     //data = data_can;
@@ -2746,29 +2686,28 @@ List SwapTargetOffspring(List &data, NumericVector parameters, double &loglik_cu
     if(write_details_to_file) myfile << " - rejected." << std::endl << std::endl;
     return data;
   }
-  
+
 }
 
 void MoveColonisationTime(List &data, NumericVector parameters, double &loglik_cur, double w, IntegerVector Vq, IntegerVector Va, int &nacc_move)
 {
   bool print_details = false;
-  
+
   IntegerVector t_a = data["t_a"];
   IntegerVector t_d = data["t_d"];
   IntegerVector t_c = data["t_c"];
   IntegerVector source = data["source"];
-  
+
   List data_can = clone(data);
   IntegerVector t_c_can = data_can["t_c"];
   IntegerVector source_can = data_can["source"];
-  
+
   IntegerVector colonised_population = union_(Vq,Va);
   int target = SampleVector(colonised_population);
   //Rcout << "Colonised population = " << colonised_population << std::endl;
   int last_day = ReturnLastDay(data, target);
   //Rcout << "t_a = " << t_a[target] << "Last day = " << last_day << std::endl;
-  
-  
+
   double log_prop_ratio = 0.0;
   double U = R::runif(0.0,1.0);
   if(U < w)
@@ -2807,10 +2746,9 @@ void MoveColonisationTime(List &data, NumericVector parameters, double &loglik_c
       log_prop_ratio = log(w) + log(last_day - t_a[target] + 1) - log(1-w) + log(total_col_pop(data_can, t_c_can[target]));
     }
   }
-  
+
   //if(t_c[target] == t_c_can[target] && source[target] == source_can[target]) return;
-  
-  
+
   double loglik_can = CalculateLogLikelihood(data_can, parameters);
   U = R::runif(0.0,1.0);
   if(print_details)
@@ -2836,24 +2774,23 @@ void MoveColonisationTime(List &data, NumericVector parameters, double &loglik_c
 void MoveColonisationTime2(List &data, NumericVector parameters, double &loglik_cur, double w, IntegerVector Vq, IntegerVector Va, int &nacc_move)
 {
   bool print_details = false;
-  
+
   IntegerVector t_a = data["t_a"];
   IntegerVector t_d = data["t_d"];
   IntegerVector t_c = data["t_c"];
   IntegerVector source = data["source"];
-  
+
   List data_can = clone(data);
   IntegerVector t_c_can = data_can["t_c"];
   IntegerVector source_can = data_can["source"];
-  
+
   IntegerVector colonised_population = union_(Vq,Va);
   int target = SampleVector(colonised_population);
   int num_patients = data["num_patients"];
   //Rcout << "Colonised population = " << colonised_population << std::endl;
   int last_day = ReturnLastDay(data, target);
   //Rcout << "t_a = " << t_a[target] << "Last day = " << last_day << std::endl;
-  
-  
+
   double log_prop_ratio = 0.0;
   double U = R::runif(0.0,1.0);
   double v = 0.2;
@@ -2883,7 +2820,7 @@ void MoveColonisationTime2(List &data, NumericVector parameters, double &loglik_
     // Propose the target is an acquisition
     if(last_day < t_a[target]) return; // The target cannot be an acquisition
     t_c_can[target] = SampleVector(seq(t_a[target],last_day));
-    
+
     U = R::runif(0.0,1.0);
     if(U < v)
     {
@@ -2904,7 +2841,7 @@ void MoveColonisationTime2(List &data, NumericVector parameters, double &loglik_
       else
       {
         // HCW Acquisition -> HCW Acquisition
-        log_prop_ratio = log(hcw_col_pop(data_can,t_c_can[target])) - log(hcw_col_pop(data,t_c[target]));			
+        log_prop_ratio = log(hcw_col_pop(data_can,t_c_can[target])) - log(hcw_col_pop(data,t_c[target]));
       }
       if(hcw_col_pop(data_can,t_c_can[target]) != possible_infectors.length())
       {
@@ -2925,7 +2862,7 @@ void MoveColonisationTime2(List &data, NumericVector parameters, double &loglik_
       else if(source[target] < num_patients)
       {
         // Patient Acquisition -> Patient Acquisition
-        log_prop_ratio = log(col_pop(data_can,t_c_can[target])) - log(col_pop(data,t_c[target]));	
+        log_prop_ratio = log(col_pop(data_can,t_c_can[target])) - log(col_pop(data,t_c[target]));
       }
       else
       {
@@ -2937,10 +2874,9 @@ void MoveColonisationTime2(List &data, NumericVector parameters, double &loglik_
         stop("inconsistency between possible infectors and the col_pop");
       }
     }
-    
+
   }
-  
-  
+
   double loglik_can = CalculateLogLikelihood(data_can, parameters);
   U = R::runif(0.0,1.0);
   if(print_details)
@@ -2963,7 +2899,6 @@ void MoveColonisationTime2(List &data, NumericVector parameters, double &loglik_
   }
 }
 
-
 void AddColonisationTime(List &data, NumericVector parameters, double &loglik_cur, double w, IntegerVector Vs, IntegerVector &Va, int &nacc_add)
 {
   bool print_details = false;
@@ -2971,25 +2906,25 @@ void AddColonisationTime(List &data, NumericVector parameters, double &loglik_cu
   IntegerVector t_c = data["t_c"];
   IntegerVector t_d = data["t_d"];
   IntegerVector source = data["source"];
-  
+
   List data_can = clone(data);
   IntegerVector t_c_can = data_can["t_c"];
   IntegerVector source_can = data_can["source"];
-  
+
   IntegerVector susceptible_population = setdiff(Vs,Va);
   if(susceptible_population.length()==0) return;
   IntegerVector nadd0 = ReturnNadd0(data, Va);
   int target = SampleVector(susceptible_population);
-  
+
   double log_prop_ratio = 0;
-  
+
   double U = R::runif(0.0,1.0);
   if(U < w)
   {
     // Propose an importation
     t_c_can[target] = t_a[target];
     source_can[target] = -1;
-    
+
     log_prop_ratio = log(susceptible_population.length()) - log(w) - log(1+nadd0.length());
     //log_prop_ratio = log(susceptible_population.length()) - log(w) - log(1+Va.length());
   }
@@ -3000,15 +2935,15 @@ void AddColonisationTime(List &data, NumericVector parameters, double &loglik_cu
     IntegerVector possible_infectors = ReturnPossibleInfectors(data_can, target);
     if(possible_infectors.length()==0) return;
     source_can[target] = SampleVector(possible_infectors);
-    
-    log_prop_ratio = log(total_col_pop(data_can, t_c_can[target])) + log(susceptible_population.length()) + 
+
+    log_prop_ratio = log(total_col_pop(data_can, t_c_can[target])) + log(susceptible_population.length()) +
       log(t_d[target] - t_a[target] + 1) - log(1-w) - log(1+nadd0.length());
   }
-  
+
   //if(!CheckData(data_can)) stop("error with data with the adding step!");
   double loglik_can = CalculateLogLikelihood(data_can, parameters);
   U = R::runif(0.0,1.0);
-  
+
   if(print_details) Rcout << "ADDING ID " << target <<  ": Loglik can = " << loglik_can << ", loglik cur = " << loglik_cur << ", log prop ratio = " << log_prop_ratio;
   if(log(U) < loglik_can - loglik_cur + log_prop_ratio)
   {
@@ -3022,7 +2957,7 @@ void AddColonisationTime(List &data, NumericVector parameters, double &loglik_cu
   {
     if(print_details) Rcout << " - rejected." << std::endl;
   }
-  
+
 }
 
 void RemoveColonisationTime(List &data, NumericVector parameters, double &loglik_cur, double w, IntegerVector Vs, IntegerVector &Va, int &nacc_remove)
@@ -3032,20 +2967,20 @@ void RemoveColonisationTime(List &data, NumericVector parameters, double &loglik
   IntegerVector t_c = data["t_c"];
   IntegerVector t_d = data["t_d"];
   IntegerVector source = data["source"];
-  
+
   List data_can = clone(data);
   IntegerVector t_c_can = data_can["t_c"];
   IntegerVector source_can = data_can["source"];
-  
+
   IntegerVector susceptible_population = setdiff(Vs,Va);
   IntegerVector nadd0 = ReturnNadd0(data, Va);
   if(nadd0.length()==0) return;
   int target = SampleVector(nadd0);
   double log_prop_ratio = 0;
-  
+
   source_can[target] = -2;
   t_c_can[target] = -1;
-  
+
   if(source[target]==-1)
   {
     // Removing an importation
@@ -3057,9 +2992,9 @@ void RemoveColonisationTime(List &data, NumericVector parameters, double &loglik
     // Removing an acquisition
     log_prop_ratio = log(nadd0.length()) + log(1-w) - log(t_d[target]-t_a[target]+1) - log(susceptible_population.length()+1) - log(total_col_pop(data,t_c[target]));
     //log_prop_ratio = log(Va.length()) + log(1-w) - log(t_d[target]-t_a[target]+1) - log(susceptible_population.length()+1) - log(col_pop(data,t_c[target]));
-    
+
   }
-  
+
   //if(!CheckData(data_can)) stop("error with data in the remove step!");
   //Rcout << "Before likelihood" << std::endl;
   double loglik_can = CalculateLogLikelihood(data_can, parameters);
@@ -3081,7 +3016,6 @@ void RemoveColonisationTime(List &data, NumericVector parameters, double &loglik
   }
 }
 
-
 bool DoesTargetHaveSequenceGreaterThanTime(List data, int time, int target, int current_variant)
 {
   IntegerVector genetic_ids = data["genetic_ids"];
@@ -3090,7 +3024,7 @@ bool DoesTargetHaveSequenceGreaterThanTime(List data, int time, int target, int 
   IntegerVector variant_idx = WhichVec(current_variant, variant_numbers);
   IntegerVector target_genetic_idx = WhichVec(target, genetic_ids);
   IntegerVector target_variant_genetic_idx = intersect(target_genetic_idx, variant_idx);
-  
+
   IntegerVector target_sample_times = as<IntegerVector>(sample_times[target_variant_genetic_idx]);
   for(int i = 0; i<target_sample_times.length(); i++)
   {
@@ -3103,16 +3037,14 @@ bool DoesTargetHaveSequenceGreaterThanTime(List data, int time, int target, int 
   return false;
 }
 
-
-
 // [[Rcpp::export]]
-void MCMC_EPI_SOURCE(List MCMC_options, IntegerVector t_a, IntegerVector t_c, IntegerVector t_d, IntegerVector source, 
+void MCMC_EPI_SOURCE(List MCMC_options, IntegerVector t_a, IntegerVector t_c, IntegerVector t_d, IntegerVector source,
                      IntegerVector hcw_ind, IntegerMatrix screening_matrix)
 {
   // Initialise data
   List data = InitialiseData(t_a, t_c, t_d, source, hcw_ind, screening_matrix);
   int num_patients = data["num_patients"];
-  
+
   // Load MCMC options
   const int iterations = MCMC_options["iterations"];
   const int num_updates = MCMC_options["num_updates"];
@@ -3121,11 +3053,11 @@ void MCMC_EPI_SOURCE(List MCMC_options, IntegerVector t_a, IntegerVector t_c, In
   NumericVector parameters = clone(initial_chain_state);
   NumericVector proposal_variance = MCMC_options["proposal_variance"];
   IntegerVector debug_flags = MCMC_options["debug_flags"];
-  
+
   std::string output_file = MCMC_options["output_file"];
   std::string source_file = MCMC_options["source_file"];
   std::string coltime_file = MCMC_options["coltime_file"];
-  
+
   // Check if there are healthcare workers
   bool include_hcw = true;
   if(t_c.length() == num_patients)
@@ -3138,7 +3070,7 @@ void MCMC_EPI_SOURCE(List MCMC_options, IntegerVector t_a, IntegerVector t_c, In
   {
     Rcout << "Healthcare workers present, include beta_h term" << std::endl;
   }
-  
+
   // Calculate other variables
   int true_positives = CalculateTruePositives(data);
   int nacc_beta_p = 0;
@@ -3158,14 +3090,14 @@ void MCMC_EPI_SOURCE(List MCMC_options, IntegerVector t_a, IntegerVector t_c, In
   myfile.open(output_file.c_str()); // Open file
   assert(myfile.is_open());
   PrintNumVectorToFile(myfile, parameters);
-  
+
   // Source file
   remove(source_file.c_str());
   std::ofstream myfile2;
   myfile2.open(source_file.c_str());
   assert(myfile2.is_open());
   PrintIntVectorToFile(myfile2, data["source"]);
-  
+
   // Col time file
   remove(coltime_file.c_str());
   std::ofstream myfile3;
@@ -3173,10 +3105,7 @@ void MCMC_EPI_SOURCE(List MCMC_options, IntegerVector t_a, IntegerVector t_c, In
   assert(myfile3.is_open());
   PrintColonisationTimeSumToFile(myfile3, data);
   //PrintIntVectorToFile(myfile3, data["t_c"]);
-  
-  
-  
-  
+
   // Begin MCMC
   Rcout << "Begin MCMC" << std::endl;
   for(int i = 1; i < iterations; i++)
@@ -3186,30 +3115,28 @@ void MCMC_EPI_SOURCE(List MCMC_options, IntegerVector t_a, IntegerVector t_c, In
     {
       parameters[0] = R::rbeta(prior_parameters[0] + true_positives, prior_parameters[1] + CalculateFalseNegatives(data));
     }
-    
+
     // Update p by gibbs
     if(debug_flags[1]==0)
     {
       int import_sum = CalculateImportationSum(data);
       parameters[1] = R::rbeta(prior_parameters[2] + import_sum, prior_parameters[3] + num_patients - import_sum);
     }
-    
-    
+
     loglik = CalculateLogLikelihood(data, parameters);
-    
+
     // Update beta_P by metropolis hastings
     if(debug_flags[2]==0)
     {
       UpdateTransmissionRate_P(data, parameters, loglik, proposal_variance[0], prior_parameters[4], nacc_beta_p);
     }
-    
+
     // update beta_H by metropolis hastings
     if(debug_flags[3]==0 && include_hcw)
     {
       UpdateTransmissionRate_H(data, parameters, loglik, proposal_variance[1], prior_parameters[5], nacc_beta_h);
     }
-    
-    
+
     // Augmented data updates
     if(debug_flags[4]==0)
     {
@@ -3234,37 +3161,30 @@ void MCMC_EPI_SOURCE(List MCMC_options, IntegerVector t_a, IntegerVector t_c, In
           // Remove a colonisation time
           RemoveColonisationTime(data, parameters, loglik, w, Vs, Va, nacc_remove);
         }
-        
-        
-        
-        
+
       }
       // Write colonisation time sum to file
       PrintIntVectorToFile(myfile2, data["source"]);
       PrintColonisationTimeSumToFile(myfile3, data);
       //PrintIntVectorToFile(myfile3, data["t_c"]);
-      
+
     }
-    
-    
-    
-    
+
     // Write parameters to file
     PrintNumVectorToFile(myfile, parameters);
-    
-    
+
     if(i%100==0)
     {
       Rcout << "Iteraion " << i << " completed, number added by algorithm = " << Va.length() << std::endl;
     }
-    
+
   }
-  
+
   // Close files
   myfile.close();
   myfile2.close();
   myfile3.close();
-  
+
   double beta_h_prob = (double)nacc_beta_h/(double)iterations;
   double beta_p_prob = (double)nacc_beta_p/(double)iterations;
   double move_prob = (double)nacc_move/(double)(augmented_moves_proposed[0]);
@@ -3275,11 +3195,7 @@ void MCMC_EPI_SOURCE(List MCMC_options, IntegerVector t_a, IntegerVector t_c, In
   //Rcout << "Move prob = " << move_prob << ", add prob = " << add_prob << ", remove prob = " << remove_prob << std::endl;
 }
 
-
-
 // No source functions
-
-
 
 double CalculateTransmissionLikelihood_NS(List data, NumericVector parameters)
 {
@@ -3296,7 +3212,7 @@ double CalculateTransmissionLikelihood_NS(List data, NumericVector parameters)
   {
     beta_h = parameters[3];
   }
-  
+
   for(int i = 0; i<num_patients; i++)
   {
     if(t_c[i] == -1)
@@ -3327,7 +3243,7 @@ double CalculateTransmissionLikelihood_NS(List data, NumericVector parameters)
     }
     if(print_details)
     {
-      Rcout << "i = " << i << ", loglik = " << loglik << ", col pop = " << col_pop(data,t_c[i]) 
+      Rcout << "i = " << i << ", loglik = " << loglik << ", col pop = " << col_pop(data,t_c[i])
             << ", hcw col pop " << hcw_col_pop(data,t_c[i]) << ", source = " << source[i] << std::endl;
     }
   }
@@ -3344,7 +3260,7 @@ double CalculateLogLikelihood_NS(List data, NumericVector parameters)
   double loglik = screening_likelihood + importation_likelihood + transmission_likelihood;
   if(print_details)
   {
-    Rcout << "Screen loglik = " << screening_likelihood << ", import loglik = " << importation_likelihood << ", transmission loglik = " 
+    Rcout << "Screen loglik = " << screening_likelihood << ", import loglik = " << importation_likelihood << ", transmission loglik = "
           << transmission_likelihood << std::endl;
   }
   return loglik;
@@ -3422,26 +3338,24 @@ void UpdateTransmissionRate_H_NS(List data, NumericVector &parameters, double &l
   }
 }
 
-
-
 void MoveColonisationTime_NS(List &data, NumericVector parameters, double &loglik_cur, double w, IntegerVector Vq, IntegerVector Va, int &nacc_move)
 {
   bool print_details = false;
-  
+
   IntegerVector t_a = data["t_a"];
   IntegerVector t_d = data["t_d"];
   IntegerVector t_c = data["t_c"];
   IntegerVector source = data["source"];
-  
+
   List data_can = clone(data);
   IntegerVector t_c_can = data_can["t_c"];
   IntegerVector source_can = data_can["source"];
-  
+
   IntegerVector colonised_population = union_(Vq,Va);
   int target = SampleVector(colonised_population);
   //int last_day = ReturnLastDay(data, target);
   int last_day = t_d[target];
-  
+
   IntegerMatrix screening_matrix = data["screening_matrix"];
   IntegerVector target_row = screening_matrix(target,_);
   IntegerVector positive_days = WhichVec(1, target_row);
@@ -3451,10 +3365,9 @@ void MoveColonisationTime_NS(List &data, NumericVector parameters, double &logli
     {
       last_day = positive_days[0];
     }
-    
+
   }
-  
-  
+
   double log_prop_ratio = 0.0;
   double U = R::runif(0.0,1.0);
   if(U < w)
@@ -3492,21 +3405,20 @@ void MoveColonisationTime_NS(List &data, NumericVector parameters, double &logli
       log_prop_ratio = log(w) + log(last_day - t_a[target] + 1) - log(1-w);
     }
   }
-  
+
   //if(t_c[target] == t_c_can[target]) return;
-  
-  
+
   double loglik_can = CalculateLogLikelihood_NS(data_can, parameters);
   U = R::runif(0.0,1.0);
   //Rcout << "t_a = " << t_a[target] << ", t_d = " << t_d[target] << ", last_day = " << last_day << ", proposed coltime = " << t_c_can[target] << std::endl;
-  
+
   if(print_details)
   {
     Rcout << std::endl;
     Rcout << "MOVING ID " << target << " from time " << t_c[target] << " to " << t_c_can[target] << " and from source " << source[target] << " to " << source_can[target] << std::endl;
     Rcout <<  "Loglik can = " << loglik_can << ", loglik cur = " << loglik_cur << ", log prop ratio = " << log_prop_ratio;
   }
-  
+
   if(log(U) < loglik_can - loglik_cur + log_prop_ratio)
   {
     data = data_can;
@@ -3520,8 +3432,6 @@ void MoveColonisationTime_NS(List &data, NumericVector parameters, double &logli
   }
 }
 
-
-
 void AddColonisationTime_NS(List &data, NumericVector parameters, double &loglik_cur, double w, IntegerVector Vs, IntegerVector &Va, int &nacc_add)
 {
   bool print_details = false;
@@ -3529,24 +3439,24 @@ void AddColonisationTime_NS(List &data, NumericVector parameters, double &loglik
   IntegerVector t_c = data["t_c"];
   IntegerVector t_d = data["t_d"];
   IntegerVector source = data["source"];
-  
+
   List data_can = clone(data);
   IntegerVector t_c_can = data_can["t_c"];
   IntegerVector source_can = data_can["source"];
-  
+
   IntegerVector susceptible_population = setdiff(Vs,Va);
   if(susceptible_population.length()==0) return;
   IntegerVector nadd0 = ReturnNadd0(data, Va);
   int target = SampleVector(susceptible_population);
   double log_prop_ratio = 0;
-  
+
   double U = R::runif(0.0,1.0);
   if(U < w)
   {
     // Propose an importation
     t_c_can[target] = t_a[target];
     source_can[target] = -1;
-    
+
     //log_prop_ratio = log(susceptible_population.length()) - log(w) - log(1+nadd0.length());
     log_prop_ratio = log(susceptible_population.length()) - log(w) - log(1+Va.length());
   }
@@ -3557,17 +3467,16 @@ void AddColonisationTime_NS(List &data, NumericVector parameters, double &loglik
     IntegerVector possible_infectors = ReturnPossibleInfectors(data_can, target);
     if(possible_infectors.length()==0) return;
     source_can[target] = SampleVector(possible_infectors);
-    
-    //log_prop_ratio = log(total_col_pop(data_can, t_c_can[target])) + log(susceptible_population.length()) + 
+
+    //log_prop_ratio = log(total_col_pop(data_can, t_c_can[target])) + log(susceptible_population.length()) +
     //  log(t_d[target] - t_a[target] + 1) - log(1-w) - log(1+nadd0.length());
     log_prop_ratio = log(susceptible_population.length()) + log(t_d[target]-t_a[target]+1) - log(1-w) - log(1+Va.length());
   }
-  
+
   //if(!CheckData(data_can)) stop("error with data with the adding step!");
   double loglik_can = CalculateLogLikelihood_NS(data_can, parameters);
   U = R::runif(0.0,1.0);
-  
-  
+
   if(print_details)
   {
     Rcout << std::endl;
@@ -3586,7 +3495,7 @@ void AddColonisationTime_NS(List &data, NumericVector parameters, double &loglik
   {
     if(print_details) Rcout << " - rejected." << std::endl;
   }
-  
+
 }
 
 void RemoveColonisationTime_NS(List &data, NumericVector parameters, double &loglik_cur, double w, IntegerVector Vs, IntegerVector &Va, int &nacc_remove)
@@ -3596,21 +3505,21 @@ void RemoveColonisationTime_NS(List &data, NumericVector parameters, double &log
   IntegerVector t_c = data["t_c"];
   IntegerVector t_d = data["t_d"];
   IntegerVector source = data["source"];
-  
+
   List data_can = clone(data);
   IntegerVector t_c_can = data_can["t_c"];
   IntegerVector source_can = data_can["source"];
-  
+
   IntegerVector susceptible_population = setdiff(Vs,Va);
   //IntegerVector nadd0 = ReturnNadd0(data, Va);
   //if(nadd0.length()==0) return;
   if(Va.length()==0) return;
   int target = SampleVector(Va);
   double log_prop_ratio = 0;
-  
+
   source_can[target] = -2;
   t_c_can[target] = -1;
-  
+
   if(source[target]==-1)
   {
     // Removing an importation
@@ -3622,9 +3531,9 @@ void RemoveColonisationTime_NS(List &data, NumericVector parameters, double &log
     // Removing an acquisition
     //log_prop_ratio = log(nadd0.length()) + log(1-w) - log(t_d[target]-t_a[target]+1) - log(susceptible_population.length()+1) - log(total_col_pop(data,t_c[target]));
     log_prop_ratio = log(Va.length()) + log(1-w) - log(t_d[target]-t_a[target]+1) - log(susceptible_population.length()+1);// - log(col_pop(data,t_c[target]));
-    
+
   }
-  
+
   //if(!CheckData(data_can)) stop("error with data in the remove step!");
   //Rcout << "Before likelihood" << std::endl;
   double loglik_can = CalculateLogLikelihood_NS(data_can, parameters);
@@ -3651,21 +3560,18 @@ void RemoveColonisationTime_NS(List &data, NumericVector parameters, double &log
   }
 }
 
-
-// Update the imputed nodes by resimulating all of them  
+// Update the imputed nodes by resimulating all of them
 List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector parameters)
 {
   bool print_details = false;
-  
+
   if(print_details) Rcout << "Attempt to return current and candidate nodes to impute" << std::endl;
   List nodes_to_impute_cur = ReturnNodesToImpute(data_cur);
   List nodes_to_impute_can = ReturnNodesToImpute(data_can);
   if(print_details) Rcout << "Returned nodes to impute" << std::endl;
-  
+
   // check if the nodes are the same
-  
-  
-  
+
   /*
    bool all_equal = false;
    if(imputed_genetic_ids_cur.length() == imputed_genetic_ids_can.length())
@@ -3680,8 +3586,7 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
    {
    int current_node = imputed_genetic_ids_cur[j];
    }
-   
-   
+
    all_equal = false;
    break;
    }
@@ -3697,12 +3602,9 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
    }
    }
    */
-  
-  
-  
-  
+
   double genetic_contribution = 0;
-  
+
   // look at the reverse process and determine the genetic contribution from the imputed nodes
   IntegerVector imputed_nodes_cur = data_cur["imputed_nodes"];
   IntegerVector genetic_ids_cur = data_cur["genetic_ids"];
@@ -3711,27 +3613,25 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
   IntegerVector t_c_cur = data_cur["t_c"];
   IntegerVector source_cur = data_cur["source"];
   IntegerMatrix genetic_matrix_cur = data_cur["genetic_matrix"];
-  
+
   IntegerVector observed_idx = WhichVec(0,imputed_nodes_cur);
   IntegerVector observed_genetic_ids = as<IntegerVector>(genetic_ids_cur[observed_idx]);
   IntegerVector observed_sample_times = as<IntegerVector>(sample_times_cur[observed_idx]);
   IntegerVector observed_variant_numbers = as<IntegerVector>(variant_numbers_cur[observed_idx]);
-  
+
   IntegerVector updated_genetic_ids = clone(observed_genetic_ids);
   IntegerVector updated_sample_times = clone(observed_sample_times);
   IntegerVector updated_variant_numbers = clone(observed_variant_numbers);
-  
-  
+
   // Check if the genetic source vectors are the same, if so do not update nodes
   IntegerVector imputed_genetic_ids_cur = nodes_to_impute_cur["nodes"];
   IntegerVector imputed_sample_times_cur = nodes_to_impute_cur["times"];
   IntegerVector imputed_variant_numbers_cur = nodes_to_impute_cur["variant_numbers"];
-  
+
   IntegerVector imputed_genetic_ids_can = nodes_to_impute_can["nodes"];
   IntegerVector imputed_sample_times_can = nodes_to_impute_can["times"];
   IntegerVector imputed_variant_numbers_can = nodes_to_impute_can["variant_numbers"];
-  
-  
+
   // THIS NEEDS TO BE FIXED -- POTENTIALLY A PROBLEM WITH THE SAME GENETIC SOURCE VECTOR BUT DIFFERENT TIMES (?)
   /*
    if(imputed_genetic_ids_cur.length() == imputed_genetic_ids_can.length())
@@ -3748,16 +3648,16 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
    }
    IntegerVector t_c_can = data_can["t_c"];
    IntegerVector source_can = data_can["source"];
-   
+
    List temp_data = List::create(Named("t_c") = t_c_can,
    Named("source") = source_can,
    Named("genetic_ids") = updated_genetic_ids_check,
    Named("sample_times") = updated_sample_times_check,
    Named("variant_numbers") = updated_variant_numbers_check);
-   
+
    IntegerVector gen_source_cur = ReturnGenSourceVector_WHD(data_cur);
    IntegerVector gen_source_can = ReturnGenSourceVector_WHD(data_can);
-   
+
    for(int i = 0; i<gen_source_cur.length(); i++)
    {
    if(gen_source_cur[i] != gen_source_can[i])
@@ -3775,13 +3675,12 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
    Rcout << "Same nodes as before, do not update distances" << std::endl;
    Rcout << "Genetic contribution before = 0 is " <<  x << std::endl;
    }
-   
+
    return data_can;
    }
    }
    */
-  
-  
+
   // print data to file for debug
   bool print_debug_file = false;
   if(print_debug_file)
@@ -3792,8 +3691,7 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
     std::ofstream myfile6;
     myfile6.open(debug_file.c_str());
     assert(myfile6.is_open());
-    
-    
+
     PrintIntVectorToFile(myfile6, data_can["t_c"]);
     PrintIntVectorToFile(myfile6, data_can["source"]);
     PrintIntVectorToFile(myfile6, data_can["genetic_ids"]);
@@ -3803,22 +3701,20 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
     myfile6 << std::endl;
     myfile6.close();
   }
-  
-  
-  
+
   if(print_details)
   {
     Rcout << "Attempt to calculate the contribution of the reverse process" << std::endl;
     Rcout << "imputed_genetic_ids_cur = " << imputed_genetic_ids_cur << std::endl;
     Rcout << "imputed_sample_times_cur = " << imputed_sample_times_cur << std::endl;
   }
-  
+
   for(int i = 0; i<imputed_genetic_ids_cur.length(); i++)
   {
     int current_id = imputed_genetic_ids_cur[i];
     int current_time = imputed_sample_times_cur[i];
     int current_variant = imputed_variant_numbers_cur[i];
-    
+
     updated_genetic_ids.push_back(current_id);
     updated_sample_times.push_back(current_time);
     updated_variant_numbers.push_back(current_variant);
@@ -3827,13 +3723,12 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
                                   Named("genetic_ids") = updated_genetic_ids,
                                   Named("sample_times") = updated_sample_times,
                                   Named("variant_numbers") = updated_variant_numbers);
-    
+
     if(print_details)
     {
       Rcout << "Current id = " << current_id << ", current time = " << current_time << ", current variant = " << current_variant << std::endl;
     }
-    
-    
+
     IntegerVector gen_source = ReturnGenSourceVector(temp_data);
     int imputed_node = gen_source.length()-1;
     //Rcout << "Gen source length = " << gen_source.length() << std::endl;
@@ -3842,7 +3737,7 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
     //Rcout << "updated_sample_times = " << updated_sample_times << std::endl;
     int parent_node = gen_source[imputed_node];
     IntegerVector children_nodes = WhichVec(imputed_node, gen_source);
-    
+
     if(parent_node == -1)
     {
       // the node is exterior
@@ -3864,13 +3759,13 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
           }
         }
       }
-      
+
       if(min_i == -1 || min_j == -1)
       {
         Rcout << "Parent node = " << parent_node << ", imputed node = " << imputed_node << ", children nodes = " << children_nodes << std::endl;
         stop("Problem trying to find the minimum pairwise distance when removing nodes!");
       }
-      
+
       //double upper = sample_times_cur[min_i] - sample_times_cur[imputed_node];
       //double lower = sample_times_cur[min_i] + sample_times_cur[min_j] - 2*sample_times_cur[imputed_node];
       double upper = updated_sample_times[min_i] - updated_sample_times[imputed_node];
@@ -3881,13 +3776,13 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
         Rcout << "Time ratio = " << time_ratio << std::endl;
         stop("invalid time ratio");
       }
-      
+
       int observed_distance = genetic_matrix_cur(imputed_node, min_i);
       if(print_details)
       {
-        Rcout << "Removing exterior node = " << imputed_node << ", parent node = " << parent_node << ", children nodes = " 
+        Rcout << "Removing exterior node = " << imputed_node << ", parent node = " << parent_node << ", children nodes = "
               << children_nodes << ", min child = " << min_i << std::endl;
-        Rcout << "Observed distance = " << observed_distance << ", min distance = " << min_distance << ", time ratio = " 
+        Rcout << "Observed distance = " << observed_distance << ", min distance = " << min_distance << ", time ratio = "
               << time_ratio << ", genetic contribution = "<< R::dbinom(observed_distance, min_distance, time_ratio, 1) << std::endl;
         Rcout << std::endl;
       }
@@ -3915,9 +3810,9 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
       int observed_distance = genetic_matrix_cur(parent_node, imputed_node);
       if(print_details)
       {
-        Rcout << "Removing interior node = " << imputed_node << ", parent node = " << parent_node << ", children nodes = " 
+        Rcout << "Removing interior node = " << imputed_node << ", parent node = " << parent_node << ", children nodes = "
               << children_nodes << ", min child = " << min_child << std::endl;
-        Rcout << "Observed distance = " << observed_distance << ", min distance = " << min_distance << ", time ratio = " 
+        Rcout << "Observed distance = " << observed_distance << ", min distance = " << min_distance << ", time ratio = "
               << time_ratio << ", genetic contribution = " << R::dbinom(observed_distance, min_distance, time_ratio, 1) << std::endl;
         Rcout << std::endl;
       }
@@ -3925,22 +3820,20 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
        if(print_details)
        {
        Rcout << "Observed distance = " << observed_distance << ", min distance = " << min_distance << ", time ratio = " << time_ratio << std::endl;
-       Rcout << "sample_times_cur[imputed_node] = " << sample_times_cur[imputed_node] << ", sample_times_cur[parent_node] = " 
+       Rcout << "sample_times_cur[imputed_node] = " << sample_times_cur[imputed_node] << ", sample_times_cur[parent_node] = "
              << sample_times_cur[parent_node] << ", sample_times_cur[min_child] = " << sample_times_cur[min_child] << std::endl;
        }
        */
       genetic_contribution += R::dbinom(observed_distance, min_distance, time_ratio, 1);
     }
   }
-  
-  
+
   // Now simulate imputed nodes under the new configuration
   if(print_details)
   {
     Rcout << "Attempt to calculate the contribution of the forward process" << std::endl;
   }
-  
-  
+
   if(print_details)
   {
     Rcout << "Nodes cur = " << imputed_genetic_ids_cur << std::endl;
@@ -3948,13 +3841,11 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
     Rcout << "Nodes can = " << imputed_genetic_ids_can << std::endl;
     Rcout << "Times can = " << imputed_sample_times_can << std::endl;
   }
-  
+
   updated_genetic_ids = clone(observed_genetic_ids);
   updated_sample_times = clone(observed_sample_times);
   updated_variant_numbers = clone(observed_variant_numbers);
-  
-  
-  
+
   int observed_length = observed_genetic_ids.length();
   IntegerMatrix observed_genetic_matrix(observed_length);
   for(int i = 0; i<observed_length; i++)
@@ -3964,21 +3855,21 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
       observed_genetic_matrix(i,j) = genetic_matrix_cur(i,j);
     }
   }
-  
+
   IntegerMatrix updated_genetic_matrix = clone(observed_genetic_matrix);
   IntegerVector t_c_can = data_can["t_c"];
   IntegerVector source_can = data_can["source"];
-  
+
   //Rcout << std::endl;
   //PrintMatrix(updated_genetic_matrix);
   //Rcout << std::endl;
-  
+
   for(int i = 0; i<imputed_genetic_ids_can.length(); i++)
   {
     int current_id = imputed_genetic_ids_can[i];
     int current_time = imputed_sample_times_can[i];
     int current_variant = imputed_variant_numbers_can[i];
-    
+
     updated_genetic_ids.push_back(current_id);
     updated_sample_times.push_back(current_time);
     updated_variant_numbers.push_back(current_variant);
@@ -3993,7 +3884,7 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
     }
     IntegerVector gen_source = ReturnGenSourceVector(temp_data);
     IntegerMatrix genetic_matrix_can(gen_source.length());
-    
+
     // copy matrix entries
     for(int i = 0; i<updated_genetic_matrix.nrow(); i++)
     {
@@ -4002,7 +3893,7 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
         genetic_matrix_can(i,j) = updated_genetic_matrix(i,j);
       }
     }
-    
+
     int imputed_node = gen_source.length()-1;
     int parent_node = gen_source[imputed_node];
     IntegerVector children_nodes = WhichVec(imputed_node, gen_source);
@@ -4029,7 +3920,7 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
           }
         }
       }
-      
+
       if(min_i == -1 || min_j == -1)
       {
         Rcout << std::endl << "**** Debug summary ****" << std::endl;
@@ -4043,8 +3934,7 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
         Rcout << "source_can = " << as<IntegerVector>(source_can[colonised_individuals]) << std::endl;
         stop("Problem trying to find the minimum pairwise distance when adding nodes!");
       }
-      
-      
+
       // simulate the distance between min node i and the imputed node
       double upper = updated_sample_times[min_i] - updated_sample_times[imputed_node];
       double lower = updated_sample_times[min_i] + updated_sample_times[min_j] - 2*updated_sample_times[imputed_node];
@@ -4054,18 +3944,18 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
         Rcout << "Time ratio = " << time_ratio << std::endl;
         stop("invalid time ratio");
       }
-      
+
       int simulated_distance = R::rbinom(min_distance, time_ratio);
       genetic_contribution -= R::dbinom(simulated_distance, min_distance, time_ratio, 1);
       if(print_details)
       {
-        Rcout << "Adding exterior node = " << imputed_node << ", parent node = " << parent_node << ", children nodes = " 
+        Rcout << "Adding exterior node = " << imputed_node << ", parent node = " << parent_node << ", children nodes = "
               << children_nodes << ", min child = " << min_i << std::endl;
-        Rcout << "Simulated distance = " << simulated_distance << ", min distance = " << min_distance << ", time ratio = " 
+        Rcout << "Simulated distance = " << simulated_distance << ", min distance = " << min_distance << ", time ratio = "
               << time_ratio << ", genetic contribution = "<< R::dbinom(simulated_distance, min_distance, time_ratio, 1) << std::endl;
         Rcout << std::endl;
       }
-      //Rcout << "Min i = " << min_i << ", min j = " << min_j << ", simulated distance = " << simulated_distance << std::endl;  
+      //Rcout << "Min i = " << min_i << ", min j = " << min_j << ", simulated distance = " << simulated_distance << std::endl;
       genetic_matrix_can(min_i, imputed_node) = simulated_distance;
       genetic_matrix_can(imputed_node, min_i) = simulated_distance;
       for(int i = 0; i<(gen_source.length()-1); i++)
@@ -4103,32 +3993,31 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
           min_child = current_child;
         }
       }
-      
+
       double upper = (double)(updated_sample_times[imputed_node]) - (double)(updated_sample_times[parent_node]);
       double lower = (double)(updated_sample_times[min_child]) - (double)(updated_sample_times[parent_node]);
       double time_ratio = upper/lower;
-      
+
       if(time_ratio < 0 || time_ratio > 1)
       {
         Rcout << "Time ratio = " << time_ratio << std::endl;
         stop("invalid time ratio");
       }
-      
+
       // Simulate a distance
       int simulated_distance = R::rbinom(min_distance, time_ratio);
       genetic_contribution -= R::dbinom(simulated_distance, min_distance, time_ratio, 1);
       if(print_details)
       {
-        Rcout << "Adding interior node = " << imputed_node << ", parent node = " << parent_node << ", children nodes = " 
+        Rcout << "Adding interior node = " << imputed_node << ", parent node = " << parent_node << ", children nodes = "
               << children_nodes << ", min child = " << min_child << std::endl;
-        Rcout << "Simulated distance = " << simulated_distance << ", min distance = " << min_distance << ", time ratio = " 
+        Rcout << "Simulated distance = " << simulated_distance << ", min distance = " << min_distance << ", time ratio = "
               << time_ratio << ", genetic contribution = "<< R::dbinom(simulated_distance, min_distance, time_ratio, 1) << std::endl;
         Rcout << std::endl;
       }
       genetic_matrix_can(imputed_node, parent_node) = simulated_distance;
       genetic_matrix_can(parent_node, imputed_node) = simulated_distance;
-      
-      
+
       for(int i = 0; i<(gen_source.length()-1); i++)
       {
         if(i != parent_node)
@@ -4136,7 +4025,7 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
           IntegerVector children_loc = WhichVec(i,children_nodes);
           if(children_loc.length()==0)
           {
-            // not a child node, calculate distance by summing 
+            // not a child node, calculate distance by summing
             int dist = CalculateDistanceBetweenNodes_Rcpp(i, imputed_node, gen_source, genetic_matrix_can);
             genetic_matrix_can(i,imputed_node) = dist;
             genetic_matrix_can(imputed_node,i) = dist;
@@ -4149,12 +4038,9 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
           }
         }
       }
-      
-      
-      
-      
+
       /*
-       // fill in the rest 
+       // fill in the rest
        // ReturnPathToRoot(IntegerVector gen_source, int node)
        if(print_details) Rcout << "Gen source = " << gen_source << std::endl;
        if(print_details) Rcout << "Genetic ids =  " << updated_genetic_ids << std::endl;
@@ -4163,7 +4049,7 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
        {
        IntegerVector path_to_root = ReturnPathToRoot_Rcpp(gen_source, i);
        //Rcout << "Path to root = " << path_to_root << std::endl;
-       
+
        IntegerVector imputed_loc_in_path = WhichVec(imputed_node, path_to_root);
        if(imputed_loc_in_path.length() == 0)
        {
@@ -4178,61 +4064,56 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
        genetic_matrix_can(imputed_node, i) = genetic_matrix_can(parent_node, i) - simulated_distance;
        }
        }
-       
+
        */
     }
-    
-    
-    
+
     updated_genetic_matrix = genetic_matrix_can;
     //PrintMatrix(updated_genetic_matrix);
   }
-  
+
   bool negative_matrix = DoesMatrixContainNegativeEntries(updated_genetic_matrix);
   if(negative_matrix)
   {
     //Rcout << "gen source can = " << gen_source_can << std::endl;
     //PrintMatrix(genetic_matrix_can);
-    
+
     //Rcout << "Children nodes = " << children_nodes << std::endl;
     Rcout << "Negative moves in the matrix - no move is made!" << std::endl;
     genetic_contribution -= 1000; // make the move impossible
     //stop("negative values in the matrix!");
   }
-  
+
   IntegerVector t_a = data_can["t_a"];
   IntegerVector t_d = data_can["t_d"];
   IntegerMatrix screening_matrix = data_can["screening_matrix"];
   int sequence_length = data_can["sequence_length"];
-  
-  
+
   IntegerVector updated_imputed_nodes(updated_genetic_ids.length());
   for(int i = observed_genetic_ids.length(); i<updated_genetic_ids.length(); i++)
   {
     updated_imputed_nodes[i] = 1;
   }
   if(print_details) Rcout << "Updated imputed nodes = " << updated_imputed_nodes << std::endl;
-  
-  
+
   // fix any imputed master distances that may be missing
   List temp_data = List::create(Named("t_c") = t_c_can,
                                 Named("source") = source_can,
                                 Named("genetic_ids") = updated_genetic_ids,
                                 Named("sample_times") = updated_sample_times,
                                 Named("variant_numbers") = updated_variant_numbers);
-  
+
   IntegerVector gen_source_cur = ReturnGenSourceVector(data_cur);
   IntegerVector gen_source_can = ReturnGenSourceVector(temp_data);
-  
+
   if(print_details) Rcout << "gen source cur = " << gen_source_cur << std::endl;
   if(print_details) Rcout << "gen source can = " << gen_source_can << std::endl;
-  
+
   int num_patients = data_cur["num_patients"];
   IntegerVector hcw_ind = data_cur["hcw_ind"];
-  
-  
+
   //Rcout << "Need to impute" << std::endl;
-  List final_data = List::create(Named("t_a") = t_a, 
+  List final_data = List::create(Named("t_a") = t_a,
                                  Named("t_c") = t_c_can,
                                  Named("t_d") = t_d,
                                  Named("source") = source_can,
@@ -4246,14 +4127,13 @@ List UpdateImputedNodesMoveAll(List data_cur, List data_can, NumericVector param
                                  Named("genetic_contribution") = genetic_contribution,
                                  Named("num_patients") = num_patients,
                                  Named("hcw_ind") = hcw_ind);
-  
+
   return final_data;
 }
 
-
 /* Given an infection event, does a node need to be imputed? the way to check this is to see if there is eventually a sequence in the path of
  * the infector and also the infection
- * 
+ *
  */
 // [[Rcpp::export]]
 bool DoesNodeNeedToBeImputed(List data, int target, int current_variant)
@@ -4265,26 +4145,24 @@ bool DoesNodeNeedToBeImputed(List data, int target, int current_variant)
   IntegerVector genetic_ids = data["genetic_ids"];
   IntegerVector sample_times = data["sample_times"];
   IntegerVector variant_numbers = data["variant_numbers"];
-  
+
   IntegerVector variant_idx = WhichVec(current_variant,variant_numbers);
-  
-  
+
   int col_time = t_c[target];
   int infector = source[target];
-  
+
   if(print_details) Rcout << "Target = " << target << ", col time = " << col_time << ", infector = " << infector << std::endl;
   // First check the future events of the target
   IntegerVector target_genetic_idx = WhichVec(target, genetic_ids);
   IntegerVector target_variant_genetic_idx = intersect(target_genetic_idx, variant_idx);
   IntegerVector target_sample_times = as<IntegerVector>(sample_times[target_variant_genetic_idx]);
-  
+
   // check time of colonisation
   IntegerVector col_time_idx = WhichVec(col_time, target_sample_times);
   if(col_time_idx.length() > 0) return false;
-  
-  
+
   bool forward_sequence_found_target = DoesTargetHaveSequenceGreaterThanTime(data, col_time, target, current_variant);
-  
+
   if(!forward_sequence_found_target)
   {
     // Could not find a further sequence in the target, check any children and their children
@@ -4321,26 +4199,24 @@ bool DoesNodeNeedToBeImputed(List data, int target, int current_variant)
       primary_targets = secondary_targets;
     }
   }
-  
-  
+
   if(!forward_sequence_found_target) return false;
-  
-  
+
   // now do the same but with the infector
   bool forward_sequence_found_infector = false;
-  
+
   // check if the infector has a swab at the time of infection, OR another infection with a swab at that time
   IntegerVector infector_genetic_idx = WhichVec(infector, genetic_ids);
   IntegerVector infector_variant_genetic_idx = intersect(infector_genetic_idx, variant_idx);
   IntegerVector infector_sample_times = as<IntegerVector>(sample_times[infector_variant_genetic_idx]);
-  
+
   // check time of colonisation
   col_time_idx = WhichVec(col_time, infector_sample_times);
   if(col_time_idx.length() > 0) return false;
-  
+
   // check sources time of col
   IntegerVector infector_sources = WhichVec(infector, source);
-  
+
   if(print_details) Rcout << "infector sources = " << infector_sources << std::endl;
   IntegerVector primary_targets;
   for(int i = 0; i<infector_sources.length(); i++)
@@ -4358,7 +4234,7 @@ bool DoesNodeNeedToBeImputed(List data, int target, int current_variant)
           IntegerVector infector_other_genetic_idx = WhichVec(current_source, genetic_ids);
           IntegerVector infector_variant_other_genetic_idx = intersect(infector_other_genetic_idx, variant_idx);
           IntegerVector infector_other_sample_times = as<IntegerVector>(sample_times[infector_variant_other_genetic_idx]);
-          if(print_details) Rcout << "infector_other_genetic_idx = " << infector_other_genetic_idx << ", infector_other_sample_times = " << infector_other_sample_times 
+          if(print_details) Rcout << "infector_other_genetic_idx = " << infector_other_genetic_idx << ", infector_other_sample_times = " << infector_other_sample_times
                                   << std::endl;
           col_time_idx = WhichVec(col_time, infector_other_sample_times);
           if(print_details) Rcout << "col time = " << col_time << std::endl;
@@ -4369,14 +4245,14 @@ bool DoesNodeNeedToBeImputed(List data, int target, int current_variant)
         }
         primary_targets.push_back(current_source);
       }
-      
+
     }
   }
-  
+
   forward_sequence_found_infector = DoesTargetHaveSequenceGreaterThanTime(data, col_time, infector, current_variant);
-  
+
   if(print_details) Rcout << "Infector = " << infector << ", forward seq found = " << forward_sequence_found_infector << std::endl;
-  
+
   // look through children
   bool still_searching_secondary = true;
   if(forward_sequence_found_infector)
@@ -4415,14 +4291,13 @@ bool DoesNodeNeedToBeImputed(List data, int target, int current_variant)
     }
     primary_targets = secondary_targets;
   }
-  
+
   if(print_details)
   {
     Rcout << "Forward sequence found in infector = " << forward_sequence_found_infector << std::endl;
     Rcout << "Forward sequence found in target = " << forward_sequence_found_target << std::endl;
   }
-  
-  
+
   if(forward_sequence_found_infector && forward_sequence_found_target)
   {
     return true;
@@ -4434,20 +4309,19 @@ bool DoesNodeNeedToBeImputed(List data, int target, int current_variant)
 List Rcpp_sort_imputed_nodes(IntegerVector nodes, IntegerVector times, IntegerVector variants)
 {
   IntegerVector idx = seq_along(times) - 1;
-  
+
   std::sort(idx.begin(), idx.end(), [&](int i, int j){
     if(nodes[i]==nodes[j]) {
       return variants[i] < variants[j];
     }
     return nodes[i] < nodes[j];
   });
-  
+
   List return_data = List::create(Named("nodes") = nodes[idx],
                                   Named("times") = times[idx],
                                                         Named("variant_numbers") = variants[idx]);
   return return_data;
 }
-
 
 // [[Rcpp::export]]
 List ReturnNodesToImpute(List data)
@@ -4459,18 +4333,17 @@ List ReturnNodesToImpute(List data)
   IntegerVector sample_times = data["sample_times"];
   IntegerVector variant_numbers = data["variant_numbers"];
   IntegerVector colonised_idx = WhichNotEqualVec(-1, t_c);
-  
+
   //Timer timer;
   //timer.step("start");        // record the starting point
-  
-  
+
   //Rcout << "Returning nodes to impute " << std::endl;
   IntegerVector imputed_nodes(genetic_ids.length());
   if(data.containsElementNamed("imputed_nodes"))
   {
     imputed_nodes = data["imputed_nodes"];
   }
-  
+
   // store the ID of all patients who were infected/acquisitions
   IntegerVector infection_events;
   for(int i = 0; i<colonised_idx.length(); i++)
@@ -4480,16 +4353,16 @@ List ReturnNodesToImpute(List data)
       infection_events.push_back(colonised_idx[i]);
     }
   }
-  
+
   //timer.step("Store infection events");      // record the first step
-  
+
   IntegerVector infection_event_times = as<IntegerVector>(t_c[infection_events]);
-  
+
   //Rcout << "Before sort - infection events = " << infection_events << ", times = " << infection_event_times << std::endl;
-  
+
   // sort the events by times
   infection_events = Rcpp_sort(infection_events, infection_event_times);
-  
+
   //timer.step("Sort infection events");      // record the next step
   //Rcout << "Infection events = " << infection_events << std::endl;
   //Rcout << "After sort - infection events = " << infection_events << ", times = " << infection_event_times << std::endl;
@@ -4525,7 +4398,7 @@ List ReturnNodesToImpute(List data)
     }
   }
   //Rcout << "Variants to search length = " << variants_to_search.length() << ", unique variants length = " << unique_variants.length() << std::endl;
-  
+
   for(int i = 0; i<infection_events.length(); i++)
   {
     for(int j = 0; j<variants_to_search.length(); j++)
@@ -4536,7 +4409,7 @@ List ReturnNodesToImpute(List data)
       bool does_node_need_impute = DoesNodeNeedToBeImputed(temp_data, current_infection_event, current_variant);
       if(print_details)
       {
-        Rcout << "Trying ID = " << current_infection_event << " at time " << t_c[current_infection_event] << " from source = " 
+        Rcout << "Trying ID = " << current_infection_event << " at time " << t_c[current_infection_event] << " from source = "
               << source[current_infection_event] << " with variant =  " << current_variant << ", node needed = " << does_node_need_impute << std::endl;
       }
       if(does_node_need_impute)
@@ -4554,7 +4427,7 @@ List ReturnNodesToImpute(List data)
           Rcout << "variant_locs = " << variant_locs << std::endl;
           Rcout << "id_time_variant_intersect = " << id_time_variant_intersect << std::endl;
         }
-        
+
         if(id_time_variant_intersect.length()==0)
         {
           updated_genetic_ids.push_back(source[current_infection_event]);
@@ -4569,35 +4442,30 @@ List ReturnNodesToImpute(List data)
                                    Named("sample_times") = updated_sample_times,
                                    Named("variant_numbers") = updated_variant_numbers);
         }
-        
-        
+
       }
     }
-    
-    
+
   }
   //timer.step("Determine if nodes need imputing");      // record the next step
-  
-  //NumericVector res(timer);   // 
+
+  //NumericVector res(timer);   //
   //Rcout << res << std::endl;
-  
-  
+
   if(print_details)
   {
     Rcout << "nodes_to_impute = " << nodes_to_impute << std::endl;
     Rcout << "imputed_times = " << imputed_times << std::endl;
     Rcout << "variant_numbers_to_impute = " << variant_numbers_to_impute << std::endl;
   }
-  
-  
+
   List data_out = Rcpp_sort_imputed_nodes(nodes_to_impute, imputed_times, variant_numbers_to_impute);
-  
+
   //List data_out = UniqueSort(nodes_to_impute, imputed_times, variant_numbers_to_impute);
   IntegerVector final_nodes = data_out["nodes"];
   IntegerVector final_times = data_out["times"];
   IntegerVector final_variants = data_out["variant_numbers"];
-  
-  
+
   List return_data = List::create(Named("nodes") = final_nodes,
                                   Named("times") = final_times,
                                   Named("variant_numbers") = final_variants);
@@ -4609,16 +4477,14 @@ List ReturnNodesToImpute(List data)
   return return_data;
 }
 
-
-
 // [[Rcpp::export]]
-void MCMC_EPI_NS(List MCMC_options, IntegerVector t_a, IntegerVector t_c, IntegerVector t_d, 
+void MCMC_EPI_NS(List MCMC_options, IntegerVector t_a, IntegerVector t_c, IntegerVector t_d,
                  IntegerVector source, IntegerVector hcw_ind, IntegerMatrix screening_matrix)
 {
   // Initialise data
   List data = InitialiseData(t_a, t_c, t_d, source, hcw_ind, screening_matrix);
   int num_patients = data["num_patients"];
-  
+
   // Load MCMC options
   const int iterations = MCMC_options["iterations"];
   const int num_updates = MCMC_options["num_updates"];
@@ -4627,11 +4493,11 @@ void MCMC_EPI_NS(List MCMC_options, IntegerVector t_a, IntegerVector t_c, Intege
   NumericVector parameters = clone(initial_chain_state);
   NumericVector proposal_variance = MCMC_options["proposal_variance"];
   IntegerVector debug_flags = MCMC_options["debug_flags"];
-  
+
   std::string output_file = MCMC_options["output_file"];
   std::string source_file = MCMC_options["source_file"];
   std::string coltime_file = MCMC_options["coltime_file"];
-  
+
   // Check if there are healthcare workers
   bool include_hcw = true;
   if(t_c.length() == num_patients)
@@ -4644,8 +4510,7 @@ void MCMC_EPI_NS(List MCMC_options, IntegerVector t_a, IntegerVector t_c, Intege
   {
     Rcout << "Healthcare workers present, include beta_h term" << std::endl;
   }
-  
-  
+
   // Calculate other variables
   int true_positives = CalculateTruePositives(data);
   int nacc_beta_p = 0;
@@ -4658,7 +4523,7 @@ void MCMC_EPI_NS(List MCMC_options, IntegerVector t_a, IntegerVector t_c, Intege
   IntegerVector Vs = CalculateVs(data);
   IntegerVector Vq = CalculateVq(data);
   IntegerVector augmented_moves_proposed(5);
-  
+
   // Write to files
   // Output file
   remove(output_file.c_str());
@@ -4666,7 +4531,7 @@ void MCMC_EPI_NS(List MCMC_options, IntegerVector t_a, IntegerVector t_c, Intege
   myfile.open(output_file.c_str()); // Open file
   assert(myfile.is_open());
   PrintNumVectorToFile(myfile, parameters);
-  
+
   // Col time file
   remove(coltime_file.c_str());
   std::ofstream myfile3;
@@ -4674,10 +4539,7 @@ void MCMC_EPI_NS(List MCMC_options, IntegerVector t_a, IntegerVector t_c, Intege
   assert(myfile3.is_open());
   PrintColonisationTimeSumToFile(myfile3, data);
   //PrintIntVectorToFile(myfile3, data["t_c"]);
-  
-  
-  
-  
+
   // Begin MCMC
   Rcout << "Begin MCMC" << std::endl;
   for(int i = 1; i < iterations; i++)
@@ -4687,31 +4549,30 @@ void MCMC_EPI_NS(List MCMC_options, IntegerVector t_a, IntegerVector t_c, Intege
     {
       parameters[0] = R::rbeta(prior_parameters[0] + true_positives, prior_parameters[1] + CalculateFalseNegatives(data));
     }
-    
+
     // Update p by gibbs
     if(debug_flags[1]==0)
     {
       int import_sum = WhichVec(-1, data["source"]).length();
       parameters[1] = R::rbeta(prior_parameters[2] + import_sum, prior_parameters[3] + num_patients - import_sum);
     }
-    
-    
+
     loglik = CalculateLogLikelihood_NS(data, parameters);
-    
+
     // Update beta_P by metropolis hastings
     if(debug_flags[2]==0)
     {
       UpdateTransmissionRate_P_NS(data, parameters, loglik, proposal_variance[0], prior_parameters[4], nacc_beta_p);
     }
-    
+
     // update beta_H by metropolis hastings
     if(debug_flags[3]==0 && include_hcw)
     {
       UpdateTransmissionRate_H_NS(data, parameters, loglik, proposal_variance[1], prior_parameters[5], nacc_beta_h);
     }
-    
+
     // Augmented data updates
-    
+
     // Augmented data updates
     if(debug_flags[4]==0)
     {
@@ -4737,37 +4598,30 @@ void MCMC_EPI_NS(List MCMC_options, IntegerVector t_a, IntegerVector t_c, Intege
           // Remove a colonisation time
           RemoveColonisationTime_NS(data, parameters, loglik, w, Vs, Va, nacc_remove);
         }
-        
-        
-        
-        
+
       }
       // Write colonisation time sum to file
       //PrintIntVectorToFile(myfile2, data["source"]);
       PrintColonisationTimeSumToFile(myfile3, data);
       //PrintIntVectorToFile(myfile3, data["t_c"]);
-      
+
     }
-    
-    
-    
-    
+
     // Write parameters to file
     PrintNumVectorToFile(myfile, parameters);
-    
-    
+
     if(i%100==0)
     {
       Rcout << "Iteraion " << i << " completed, number added by algorithm = " << Va.length() << std::endl;
     }
-    
+
   }
-  
+
   // Close files
   myfile.close();
   //myfile2.close();
   myfile3.close();
-  
+
   double beta_h_prob = (double)nacc_beta_h/(double)iterations;
   double beta_p_prob = (double)nacc_beta_p/(double)iterations;
   double move_prob = (double)nacc_move/(double)(augmented_moves_proposed[0]);
@@ -4782,7 +4636,7 @@ List InitialiseMCMCImputedNodes2(List data)
 {
   List nodes_to_impute = ReturnNodesToImpute(data);
   Rcout << "Returned nodes to impute" << std::endl;
-  
+
   // look at the reverse process and determine the genetic contribution from the imputed nodes
   IntegerVector genetic_ids = data["genetic_ids"];
   IntegerVector sample_times = data["sample_times"];
@@ -4790,31 +4644,31 @@ List InitialiseMCMCImputedNodes2(List data)
   IntegerVector t_c = data["t_c"];
   IntegerVector source = data["source"];
   IntegerMatrix genetic_matrix = data["genetic_matrix"];
-  
+
   int original_length = genetic_ids.length();
-  
+
   IntegerVector updated_genetic_ids = clone(genetic_ids);
   IntegerVector updated_sample_times = clone(sample_times);
   IntegerVector updated_variant_numbers = clone(variant_numbers);
-  
+
   IntegerVector imputed_genetic_ids = nodes_to_impute["nodes"];
   IntegerVector imputed_sample_times = nodes_to_impute["times"];
   IntegerVector imputed_variant_numbers = nodes_to_impute["variant_numbers"];
-  
+
   Rcout << "Nodes to impute = " << imputed_genetic_ids << std::endl;
   Rcout << "sample times to impute = " << imputed_sample_times << std::endl;
   Rcout << "variant numbers to impute = " << imputed_variant_numbers << std::endl;
-  
+
   for(int i = 0; i<imputed_genetic_ids.length(); i++)
   {
     int current_id = imputed_genetic_ids[i];
     int current_time = imputed_sample_times[i];
     int current_variant = imputed_variant_numbers[i];
-    
+
     genetic_ids.push_back(current_id);
     sample_times.push_back(current_time);
     variant_numbers.push_back(current_variant);
-    
+
     List temp_data = List::create(Named("t_c") = t_c,
                                   Named("source") = source,
                                   Named("genetic_ids") = genetic_ids,
@@ -4828,7 +4682,7 @@ List InitialiseMCMCImputedNodes2(List data)
     {
       // imported case, copy first child
       IntegerVector children_nodes = WhichVec(imputed_node, gen_source);
-      
+
       int min_distance = 1000000000;
       int min_i = -1;
       int min_j = -1;
@@ -4847,16 +4701,16 @@ List InitialiseMCMCImputedNodes2(List data)
           }
         }
       }
-      
+
       if(min_i == -1 || min_j == -1)
       {
         Rcout << "Parent node = " << parent_node << ", imputed node = " << imputed_node << ", children nodes = " << children_nodes << std::endl;
         stop("Problem trying to find the minimum pairwise distance when removing nodes!");
       }
-      
+
       node_to_copy = min_i;
     }
-    
+
     IntegerMatrix updated_genetic_matrix(gen_source.length());
     for(int ii = 0; ii<(gen_source.length()-1); ii++)
     {
@@ -4867,26 +4721,24 @@ List InitialiseMCMCImputedNodes2(List data)
       updated_genetic_matrix(ii,imputed_node) = genetic_matrix(ii,node_to_copy);
       updated_genetic_matrix(imputed_node,ii) = genetic_matrix(node_to_copy,ii);
     }
-    
+
     genetic_matrix = updated_genetic_matrix;
   }
-  
+
   IntegerVector imputed_nodes(genetic_ids.length());
   for(int i = original_length; i<genetic_ids.length(); i++)
   {
     imputed_nodes[i] = 1;
   }
-  
-  
+
   IntegerVector t_a = data["t_a"];
   IntegerVector t_d = data["t_d"];
   IntegerMatrix screening_matrix = data["screening_matrix"];
   int sequence_length = data["sequence_length"];
   int num_patients = data["num_patients"];
   IntegerVector hcw_ind = data["hcw_ind"];
-  
-  
-  List final_data = List::create(Named("t_a") = t_a , 
+
+  List final_data = List::create(Named("t_a") = t_a ,
                                  Named("t_c") = t_c,
                                  Named("t_d") = t_d,
                                  Named("source") = source,
@@ -4902,40 +4754,32 @@ List InitialiseMCMCImputedNodes2(List data)
   Rcout << "Before gen source" << std::endl;
   IntegerVector new_gen_source = ReturnGenSourceVector(final_data);
   Rcout << "After gen source " << std::endl;
-  
-  
-  
-  
-  
+
   bool print_debug = true;
   if(print_debug)
   {
     Rcout << "Final gen source = " << new_gen_source << std::endl;
   }
   //stop("stop early");
-  
+
   return final_data;
 }
 
-
 // [[Rcpp::export]]
-void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a, IntegerVector t_c, IntegerVector t_d, IntegerVector source, 
+void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a, IntegerVector t_c, IntegerVector t_d, IntegerVector source,
                         IntegerVector hcw_ind, IntegerMatrix screening_matrix, IntegerVector genetic_ids, IntegerVector sample_times,
                         IntegerVector variant_numbers, IntegerMatrix genetic_matrix)
 {
   // Initialise data
 
-  List data = InitialiseData_GEN(sequence_length, t_a, t_c, t_d, source, hcw_ind, screening_matrix, genetic_ids, sample_times, 
+  List data = InitialiseData_GEN(sequence_length, t_a, t_c, t_d, source, hcw_ind, screening_matrix, genetic_ids, sample_times,
                                  variant_numbers, genetic_matrix);
   Rcout << "Data initialised" << std::endl;
   // Initialise Imputed nodes
   data = InitialiseMCMCImputedNodes2(data);
-  
 
-  
-  
   int num_patients = data["num_patients"];
-  
+
   // Load MCMC options
   const int iterations = MCMC_options["iterations"];
   const int num_updates = MCMC_options["num_updates"];
@@ -4948,10 +4792,10 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
   std::string source_file = MCMC_options["source_file"];
   std::string coltime_file = MCMC_options["coltime_file"];
   std::string augmented_moves_file = "aug_moves.dat";
-  
+
   Rcout << "MCMC Options loaded" << std::endl;
   Rcout << "Initial chain state = " << initial_chain_state << std::endl;
-  
+
   // Check if there are healthcare workers
   bool include_hcw = true;
   if(t_c.length() == num_patients)
@@ -4964,7 +4808,7 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
   {
     Rcout << "Healthcare workers present, include beta_h term" << std::endl;
   }
-  
+
   // Calculate other variables
   int true_positives = CalculateTruePositives(data);
   int nacc_beta_p = 0;
@@ -4990,14 +4834,14 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
   myfile.open(output_file.c_str()); // Open file
   assert(myfile.is_open());
   PrintNumVectorToFile(myfile, parameters);
-  
+
   // Source file
   remove(source_file.c_str());
   std::ofstream myfile2;
   myfile2.open(source_file.c_str());
   assert(myfile2.is_open());
   PrintIntVectorToFile(myfile2, data["source"]);
-  
+
   // Col time file
   remove(coltime_file.c_str());
   std::ofstream myfile3;
@@ -5005,15 +4849,14 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
   assert(myfile3.is_open());
   PrintColonisationTimeSumToFile(myfile3, data);
   //PrintIntVectorToFile(myfile3, data["t_c"]);
-  
+
   // augmented moves file
   remove(augmented_moves_file.c_str());
   std::ofstream myfile4;
   myfile4.open(augmented_moves_file.c_str());
   assert(myfile4.is_open());
   //PrintColonisationTimeSumToFile(myfile3, data);
-  
-  
+
   Rcout << "Output files initialised" << std::endl;
   // Begin MCMC
   Rcout << "Begin MCMC" << std::endl;
@@ -5024,55 +4867,50 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
     {
       parameters[0] = R::rbeta(prior_parameters[0] + true_positives, prior_parameters[1] + CalculateFalseNegatives(data));
     }
-    
+
     // Update p by gibbs
     if(debug_flags[1]==0)
     {
       int import_sum = CalculateImportationSum(data);
       parameters[1] = R::rbeta(prior_parameters[2] + import_sum, prior_parameters[3] + num_patients - import_sum);
     }
-    
+
     List import_distance_info = CalculateImportDistance(data, parameters);
     double distance_sum = import_distance_info["distance_sum"];
     double import_counter = import_distance_info["import_counter"];
-    
+
     if(debug_flags[5]==0)
     {
       NumericVector gamma_draws = Rcpp::rgamma(1, prior_parameters[7] + distance_sum, 1/(prior_parameters[8] + import_counter));
       parameters[5] = gamma_draws[0];
     }
-    
-    
+
     loglik = CalculateLogLikelihood(data, parameters);
     //Rcout << "Log likelihood calculated" << std::endl;
-    
-    
+
     // Update beta_P by metropolis hastings
     if(debug_flags[2]==0)
     {
       UpdateTransmissionRate_P(data, parameters, loglik, proposal_variance[0], prior_parameters[4], nacc_beta_p);
     }
-    
+
     //Rcout << "Beta P updated" << std::endl;
-    
+
     // update beta_H by metropolis hastings
     if(debug_flags[3]==0 && include_hcw)
     {
       UpdateTransmissionRate_H(data, parameters, loglik, proposal_variance[1], prior_parameters[5], nacc_beta_h);
     }
     //Rcout << "Beta H updated" << std::endl;
-    
+
     if(debug_flags[4]==0)
     {
       UpdateMutationRate(data, parameters, loglik, proposal_variance[2], prior_parameters[6], nacc_lambda);
     }
     //Rcout << "Lambda updated" << std::endl;
-    
-    
 
     //Rcout << "mu updated" << std::endl;
 
-    
     // Augmented data updates
     if(debug_flags[6]==0)
     {
@@ -5105,7 +4943,7 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
         else if(floor(move) < 5)
         {
           // Swap a target with their source
-          data = SwapTargetOffspring(data, parameters, loglik, w, Vq, Va, nacc_swap, myfile4);          
+          data = SwapTargetOffspring(data, parameters, loglik, w, Vq, Va, nacc_swap, myfile4);
         }
         else if(floor(move) < 6)
         {
@@ -5115,38 +4953,31 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
         {
           data = UpdateRandomSources(data, parameters, loglik, w, Vq, Va, nacc_change_random, myfile4);
         }
-        
-        
-        
-        
+
       }
       // Write colonisation time sum to file
       PrintIntVectorToFile(myfile2, data["source"]);
       PrintColonisationTimeSumToFile(myfile3, data);
       //PrintIntVectorToFile(myfile3, data["t_c"]);
-      
+
     }
-    
-    
-    
-    
+
     // Write parameters to file
     PrintNumVectorToFile(myfile, parameters);
-    
-    
+
     if(i%100==0)
     {
       Rcout << "Iteration " << i << " completed, number added by algorithm = " << Va.length() << std::endl;
     }
-    
+
   }
-  
+
   // Close files
   myfile.close();
   myfile2.close();
   myfile3.close();
   myfile4.close();
-  
+
   double beta_h_prob = (double)nacc_beta_h/(double)iterations;
   double beta_p_prob = (double)nacc_beta_p/(double)iterations;
   double lambda_prob = (double)nacc_lambda/(double)iterations;
@@ -5159,9 +4990,8 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
   double change_all_prob = (double)nacc_change_all/(double)(augmented_moves_proposed[5]);
   double change_random_prob = (double)nacc_change_random/(double)(augmented_moves_proposed[6]);
   Rcout << "beta_P acceptance = " << beta_p_prob << ", beta_H acceptance = " << beta_h_prob << ", lambda acceptance = " << lambda_prob << std::endl;
-  Rcout << "Move prob = " << move_prob << ", add prob = " << add_prob << ", remove prob = " << remove_prob 
-        << ", change prob = " << change_prob << ", swap prob = " << swap_prob << ", change all prob = " << change_all_prob 
+  Rcout << "Move prob = " << move_prob << ", add prob = " << add_prob << ", remove prob = " << remove_prob
+        << ", change prob = " << change_prob << ", swap prob = " << swap_prob << ", change all prob = " << change_all_prob
         << ", change random prob = " << change_random_prob << std::endl;
-  //Rcout << "Move prob = " << move_prob << ", add prob = " << add_prob << ", remove prob = " << remove_prob << std::endl;
+  // Rcout << "Move prob = " << move_prob << ", add prob = " << add_prob << ", remove prob = " << remove_prob << std::endl;
 }
-
