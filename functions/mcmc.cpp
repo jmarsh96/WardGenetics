@@ -145,6 +145,8 @@ IntegerVector SampleMultipleVector(IntegerVector x, int size)
   return out;
 }
 
+
+
 int col_pop(List data, int day)
 {
   int cp = 0;
@@ -1405,7 +1407,8 @@ List MoveColonisationTimeGenetic(List &data, NumericVector parameters, double &l
     else
     {
       // Importation -> Acquisition
-      log_prop_ratio = log(w) + log(last_day - t_a[target] + 1) - log(1-w) + log(total_col_pop(data_can, t_c_can[target]));
+      log_prop_ratio = log(w) + log(last_day - t_a[target] + 1) - log(1-w) 
+                        + log(total_col_pop(data_can, t_c_can[target]));
     }
   }
   
@@ -4948,6 +4951,9 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
   std::string source_file = MCMC_options["source_file"];
   std::string coltime_file = MCMC_options["coltime_file"];
   std::string augmented_moves_file = "aug_moves.dat";
+  std::string gen_source_file = MCMC_options["gen_source_file"];
+  std::string sample_times_file = MCMC_options["sample_times_file"];
+  std::string variant_numbers_file = MCMC_options["variant_numbers_file"];
   
   Rcout << "MCMC Options loaded" << std::endl;
   Rcout << "Initial chain state = " << initial_chain_state << std::endl;
@@ -4975,7 +4981,7 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
   int nacc_remove = 0;
   int nacc_change = 0;
   int nacc_swap = 0;
-  int nacc_move_multi = 0;
+  //int nacc_move_multi = 0;
   int nacc_change_all = 0;
   int nacc_change_random = 0;
   double loglik = 0.0;
@@ -5013,6 +5019,26 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
   assert(myfile4.is_open());
   //PrintColonisationTimeSumToFile(myfile3, data);
   
+  remove(gen_source_file.c_str());
+  std::ofstream myfile5;
+  myfile5.open(gen_source_file.c_str());
+  assert(myfile5.is_open());
+  IntegerVector gen_source = ReturnGenSourceVector(data);
+  PrintIntVectorToFile(myfile5, gen_source);
+  
+  // Sample times file
+  remove(sample_times_file.c_str());
+  std::ofstream myfile6;
+  myfile6.open(sample_times_file.c_str());
+  assert(myfile6.is_open());
+  PrintIntVectorToFile(myfile6, data["sample_times"]);
+  
+  // Variant numbers file
+  remove(variant_numbers_file.c_str());
+  std::ofstream myfile7;
+  myfile7.open(variant_numbers_file.c_str());
+  assert(myfile7.is_open());
+  PrintIntVectorToFile(myfile7, data["variant_numbers"]);
   
   Rcout << "Output files initialised" << std::endl;
   // Begin MCMC
@@ -5080,7 +5106,7 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
       {
         double w = 0.3;
         //double w = 0.00001;
-        double move = R::runif(0.0,7.0);
+        double move = R::runif(0.0,6.0);
         augmented_moves_proposed[floor(move)]++;
         if(floor(move) < 1)
         {
@@ -5109,11 +5135,12 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
         }
         else if(floor(move) < 6)
         {
-          data = UpdateAllSources(data, parameters, loglik, w, Vq, Va, nacc_change_all, myfile4);
+          data = UpdateRandomSources(data, parameters, loglik, w, Vq, Va, nacc_change_random, myfile4);
+          
         }
         else if(floor(move) < 7)
         {
-          data = UpdateRandomSources(data, parameters, loglik, w, Vq, Va, nacc_change_random, myfile4);
+          data = UpdateAllSources(data, parameters, loglik, w, Vq, Va, nacc_change_all, myfile4);
         }
         
         
@@ -5123,6 +5150,10 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
       // Write colonisation time sum to file
       PrintIntVectorToFile(myfile2, data["source"]);
       PrintColonisationTimeSumToFile(myfile3, data);
+      gen_source = ReturnGenSourceVector(data);
+      PrintIntVectorToFile(myfile5, gen_source);
+      PrintIntVectorToFile(myfile6, data["sample_times"]);
+      PrintIntVectorToFile(myfile7, data["variant_numbers"]);
       //PrintIntVectorToFile(myfile3, data["t_c"]);
       
     }
@@ -5146,6 +5177,9 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
   myfile2.close();
   myfile3.close();
   myfile4.close();
+  myfile5.close();
+  myfile6.close();
+  myfile7.close();
   
   double beta_h_prob = (double)nacc_beta_h/(double)iterations;
   double beta_p_prob = (double)nacc_beta_p/(double)iterations;
@@ -5155,9 +5189,9 @@ void MCMC_EPI_GEN_HCW(List MCMC_options, int sequence_length, IntegerVector t_a,
   double remove_prob = (double)nacc_remove/(double)(augmented_moves_proposed[2]);
   double change_prob = (double)nacc_change/(double)(augmented_moves_proposed[3]);
   double swap_prob = (double)nacc_swap/(double)(augmented_moves_proposed[4]);
-  //double multi_move_prob = (double)nacc_move_multi/(double)(augmented_moves_proposed[5]);
-  double change_all_prob = (double)nacc_change_all/(double)(augmented_moves_proposed[5]);
-  double change_random_prob = (double)nacc_change_random/(double)(augmented_moves_proposed[6]);
+  double change_random_prob = (double)nacc_change_random/(double)(augmented_moves_proposed[5]);
+  double change_all_prob = (double)nacc_change_all/(double)(augmented_moves_proposed[6]);
+
   Rcout << "beta_P acceptance = " << beta_p_prob << ", beta_H acceptance = " << beta_h_prob << ", lambda acceptance = " << lambda_prob << std::endl;
   Rcout << "Move prob = " << move_prob << ", add prob = " << add_prob << ", remove prob = " << remove_prob 
         << ", change prob = " << change_prob << ", swap prob = " << swap_prob << ", change all prob = " << change_all_prob 
