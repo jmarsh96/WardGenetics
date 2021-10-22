@@ -99,7 +99,7 @@ screen_data_assessment <- function(epi_data, screening_matrix, hcw_screening_int
 
 
 ## Simulate a genetic matrix given the genetic source, sample times and mutation rate
-genetic_matrix_assessment <- function(gen_source, sample_times, mutation_rate) {
+genetic_matrix_assessment <- function(N, gen_source, sample_times, variant_numbers, mutation_rate, average_import_distance, num_observed_sequences) {
   
   
   full_distance_matrix <- matrix(NA,nrow=length(gen_source),ncol=length(gen_source))
@@ -123,7 +123,22 @@ genetic_matrix_assessment <- function(gen_source, sample_times, mutation_rate) {
     }
   }
   
+
   
+  import_idx <- which(gen_source == -1)
+  for(i in 1:length(import_idx)) {
+    for(j in 1:length(import_idx)) {
+      cur_i <- import_idx[i]
+      cur_j <- import_idx[j]
+      if(cur_i != cur_j) {
+        if(variant_numbers[cur_i] == variant_numbers[cur_j]) {
+          full_distance_matrix[cur_i,cur_j] <- rpois(1, average_import_distance)
+        }
+      }
+    }
+  }
+  
+
   for(i in 1:nrow(full_distance_matrix)) 
   {
     for(j in 1:ncol(full_distance_matrix)) 
@@ -138,7 +153,7 @@ genetic_matrix_assessment <- function(gen_source, sample_times, mutation_rate) {
     }
   }
   
-  return(full_distance_matrix)
+  return(full_distance_matrix[1:num_observed_sequences,1:num_observed_sequences])
 }
 
 
@@ -158,8 +173,104 @@ ReturnGeneticTree <- function(gen_source) {
 }
 
 
+CalculateTotalEuclidianDistance <- function(x_points, y_points) {
+  total_distance <- 0
+  k <- length(x_points)
+  for(j in 2:k) {
+    for(i in 1:j) {
+      #browser()
+      total_distance <- total_distance + sqrt((x_points[i]-y_points[j])^2)
+      if(is.na(total_distance)) browser()
+    }
+  }
+  return(total_distance)
+}
+
+genetic_matrix_assessment_marginal_calculation <- function(true_matrix, simulated_matrices) {
+  k <- nrow(true_matrix)
+  p_value_matrix <- matrix(NA,nrow=k, ncol=k)
+  for(j in 2:k) {
+    for(i in 1:j) {
+      simulated_values <- sapply(simulated_matrices, function(x) x[i,j])
+      true_value <- true_matrix[i,j]
+      p_value_matrix[i,j] <- sum(simulated_values > true_value)
+    }
+  }
+  return(p_value_matrix/length(simulated_matrices))
+}
 
 
 
+GeneticModelAssessmentSummaries <- function(true_matrix, distance_matrices) {
+  par(mfrow=c(2,2))
+  upper_tri_sums <- sapply(distance_matrices, function(x) sum(x[upper.tri(x)]))
+  hist(upper_tri_sums)
+  abline(v=sum(true_matrix[upper.tri(true_matrix)]),col=2)
+  
+  matrix_means <- sapply(distance_matrices, function(x) mean(x[upper.tri(x)]))
+  hist(matrix_means)
+  abline(v=mean(true_matrix[upper.tri(true_matrix)]),col=2)
+  
+  matrix_medians <- sapply(distance_matrices, function(x) median(x[upper.tri(x)]))
+  hist(matrix_medians)
+  abline(v=median(true_matrix[upper.tri(true_matrix)]),col=2)
+  
+  matrix_one_norms <- sapply(distance_matrices, function(x) norm(x))
+  hist(matrix_one_norms)
+  abline(v=norm(true_matrix),col=2)
+  
+  matrix_frobenieus_norms <- sapply(distance_matrices, function(x) norm(x,type="f"))
+  hist(matrix_frobenieus_norms)
+  abline(v=norm(true_matrix,type="f"),col=2)
+  
+  matrix_m_norms <- sapply(distance_matrices, function(x) norm(x,type="m"))
+  hist(matrix_m_norms)
+  abline(v=norm(true_matrix,type="m"),col=2)
+  
+  matrix_2_norms <- sapply(distance_matrices, function(x) norm(x,type="2"))
+  hist(matrix_2_norms)
+  abline(v=norm(true_matrix,type="2"),col=2)
+  
+  GeneticMatrix_MDS(true_matrix, distance_matrices)
+  par(mfrow=c(1,1))
+  
+}
+
+GeneticMatrix_MDS <- function(true_matrix, distance_matrices) {
+  
+  d <- as.dist(true_matrix) # euclidean distances between the rows
+  fit <- cmdscale(d,eig=TRUE, k=2) # k is the number of dim
+  fit # view results
+  
+  # plot solution
+  x <- fit$points[,1]
+  y <- fit$points[,2]
+  #plot(x, y, xlab="Coordinate 1", ylab="Coordinate 2",
+  #     main="Metric MDS", type="n")
+  #text(x, y, cex=.7) 
+  
+  ## perform MDS for the simulated distance matrices
+  x_points <- vector('list', max_iter)
+  y_points <- vector('list', max_iter)
+  
+  for(i in 1:max_iter) {
+    cur_dist_matrix <- distance_matrices[[i]]
+    d <- as.dist(cur_dist_matrix) # euclidean distances between the rows
+    fit <- cmdscale(d,eig=TRUE, k=2) # k is the number of dim
+    fit # view results
+    
+    # plot solution
+    x_points[[i]] <- fit$points[,1]
+    y_points[[i]] <- fit$points[,2]
+  }
+  
+  
+  total_distances <- rep(NA,max_iter)
+  for(i in 1:max_iter) {
+    total_distances[i] <- CalculateTotalEuclidianDistance(x_points[[i]],y_points[[i]])
+  }
+  hist(total_distances)
+  abline(v=CalculateTotalEuclidianDistance(x,y),col=2)
+}
 
 
