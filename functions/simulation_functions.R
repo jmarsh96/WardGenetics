@@ -16,7 +16,7 @@ simulateWard <- function(N,D,length_of_stay=7,p=0.05, z=0.95, a0 = 0.000000001, 
   source <- rep(NA,N)
   #browser()
   hcw_indicator <- c(rep(0,N),rep(1,num_col_hcw))
-  
+  #source[hcw_indicator==1] <- -1
   
   # generate admission times
   t_a[1:N] <- sort(sample(1:D,N,replace=T))
@@ -129,6 +129,19 @@ countColonisedR <- function(t_a,t_c,t_d,t) {
   currently_inward <- intersect(which(t_a <= t),which(t_d >= t))
   colonised <- intersect(currently_inward, which(!is.na(t_c)))
   return(colonised)
+}
+
+countColonisedPatients <- function(epi_data,t) {
+  t_c <- epi_data$true_coltimes
+  t_d <- epi_data$t_d
+  hcw_ind <- epi_data$hcw_ind
+  source <- epi_data$true_source
+  if(length(source) != length(t_c)) {
+    source <- c(source,rep(-1,sum(hcw_ind)))
+  }
+
+
+  return(sum(t_c < t & t_d >= t & t_c != -1 & hcw_ind == 0) + sum(t_c == t & source == -1 & hcw_ind == 0))
 }
 
 sampleWithoutSurprises <- function(x) {
@@ -735,6 +748,234 @@ CalculateTrueTransmissionProportion <- function(epi_data, source, p_L) {
 }
 
 
-
-
+SimulateGeneticData_ImportationStructure <- function(epi_data, mu, mu_g, variant_numbers) {
+  positive_swabs <- which(epi_data$screening_matrix == 1, arr.ind = T)
+  genetic_ids <- as.numeric(positive_swabs[,1])
+  sample_times <- as.numeric(positive_swabs[,2])-1
   
+  num_seqs <- length(genetic_ids)
+  distance_matrix <- matrix(NA,nrow=num_seqs, ncol=num_seqs)
+  for(i in 1:num_seqs) {
+    for(j in 1:num_seqs) {
+      if(variant_numbers[i] == variant_numbers[j]) {
+        distance_matrix[i,j] <- rgeom(1,mu)
+      } else {
+        distance_matrix[i,j] <- rgeom(1,mu_g)
+      }
+    }
+  }
+  out <- list("genetic_ids" = genetic_ids,
+              "sample_times" = sample_times,
+              "genetic_matrix" = distance_matrix)
+  return(out)
+}
+
+SimulateGeneticData_ChainPoisson <- function(epi_data, theta_gl, theta_self, theta) {
+  positive_swabs <- which(epi_data$screening_matrix == 1, arr.ind = T)
+  genetic_ids <- as.numeric(positive_swabs[,1])
+  sample_times <- as.numeric(positive_swabs[,2])-1
+  
+  num_seqs <- length(genetic_ids)
+  
+  genetic_matrix <- matrix(NA,nrow=num_seqs,ncol=num_seqs)
+  for(i in 1:num_seqs) {
+    for(j in 1:num_seqs) {
+      current_k <- CalculateK(genetic_ids, epi_data$true_source, i, j, F)
+      #browser()
+      if(current_k == 0) {
+        genetic_matrix[i,j] <- rpois(1, theta_self)
+      } else if(current_k == 1) {
+        genetic_matrix[i,j] <- rpois(1, theta)
+      } else if(is.infinite(current_k)) {
+        genetic_matrix[i,j] <- rpois(1, theta_gl)
+      }
+    }
+  }
+  
+  ## Now simulate distances for k > 1
+  missing_entries <- which(is.na(genetic_matrix),arr.ind=T)
+  #browser()
+  if(nrow(missing_entries) > 0) {
+    for(ii in 1:nrow(missing_entries)) {
+      cur_i <- missing_entries[ii,1]
+      cur_j <- missing_entries[ii,2]
+      #browser()
+      D <- CalculateD(genetic_matrix, genetic_ids, epi_data$true_source, cur_i, cur_j, F)
+      
+      draw <- rpois(1, D)
+      genetic_matrix[cur_i,cur_j] <- draw
+      genetic_matrix[cur_j,cur_i] <- draw
+    }
+  }
+
+  out <- list("genetic_ids" = genetic_ids,
+              "sample_times" = sample_times,
+              "genetic_matrix" = genetic_matrix)
+  return(out)
+}
+
+
+SimulateGeneticData_TDD <- function(epi_data, theta_gl, theta_self, theta) {
+  positive_swabs <- which(epi_data$screening_matrix == 1, arr.ind = T)
+  genetic_ids <- as.numeric(positive_swabs[,1])
+  sample_times <- as.numeric(positive_swabs[,2])-1
+  
+  num_seqs <- length(genetic_ids)
+  
+  genetic_matrix <- matrix(NA,nrow=num_seqs,ncol=num_seqs)
+  for(i in 1:num_seqs) {
+    for(j in 1:num_seqs) {
+      current_k <- CalculateK(genetic_ids, epi_data$true_source, i, j, F)
+      #browser()
+      if(current_k == 0) {
+        genetic_matrix[i,j] <- rpois(1, theta_self)
+      } else if(current_k == 1) {
+        time_diff <- abs(sample_times[i] - sample_times[j])
+        genetic_matrix[i,j] <- rpois(1, theta*time_diff)
+      } else if(is.infinite(current_k)) {
+        genetic_matrix[i,j] <- rpois(1, theta_gl)
+      }
+    }
+  }
+  
+  ## Now simulate distances for k > 1
+  missing_entries <- which(is.na(genetic_matrix),arr.ind=T)
+  #browser()
+  if(nrow(missing_entries) > 0) {
+    for(ii in 1:nrow(missing_entries)) {
+      cur_i <- missing_entries[ii,1]
+      cur_j <- missing_entries[ii,2]
+      #browser()
+      D <- CalculateD(genetic_matrix, genetic_ids, epi_data$true_source, cur_i, cur_j, F)
+      
+      draw <- rpois(1, D)
+      genetic_matrix[cur_i,cur_j] <- draw
+      genetic_matrix[cur_j,cur_i] <- draw
+    }
+  }
+  
+  out <- list("genetic_ids" = genetic_ids,
+              "sample_times" = sample_times,
+              "genetic_matrix" = genetic_matrix)
+  return(out)
+}
+
+
+SimulateGeneticData_ChainError <- function(epi_data, theta_gl, theta_self, theta) {
+  positive_swabs <- which(epi_data$screening_matrix == 1, arr.ind = T)
+  genetic_ids <- as.numeric(positive_swabs[,1])
+  sample_times <- as.numeric(positive_swabs[,2])-1
+  
+  num_seqs <- length(genetic_ids)
+  
+  genetic_matrix <- matrix(NA,nrow=num_seqs,ncol=num_seqs)
+  for(i in 1:num_seqs) {
+    for(j in 1:num_seqs) {
+      current_k <- CalculateK(genetic_ids, epi_data$true_source, i, j, F)
+      #browser()
+      if(current_k == 0) {
+        genetic_matrix[i,j] <- rpois(1, theta_self)
+      } else if(current_k == 1) {
+        genetic_matrix[i,j] <- rpois(1, theta)
+      } else if(is.infinite(current_k)) {
+        genetic_matrix[i,j] <- rpois(1, theta_gl)
+      }
+    }
+  }
+  
+  ## Now simulate distances for k > 1
+  missing_entries <- which(is.na(gen_data),arr.ind=T)
+  for(ii in 1:nrow(missing_entries)) {
+    cur_i <- missing_entries[ii,1]
+    cur_j <- missing_entries[ii,2]
+    #browser()
+    D <- CalculateD(genetic_matrix, genetic_ids, epi_data$true_source, cur_i, cur_j, F)
+    
+    draw <- rpois(1, D)
+    genetic_matrix[cur_i,cur_j] <- draw
+    genetic_matrix[cur_j,cur_i] <- draw
+  }
+  
+  
+  
+  return(genetic_matrix)
+}
+
+
+ReturnTransmissionChain <- function(source, target, zero_based_correction) {
+  current_source <- source[target]
+  chain <- c(current_source, target)
+  if(zero_based_correction) {
+    source[source >= 0] <- source[source >= 0] + 1
+  }
+  while(current_source != -1) {
+    target <- current_source
+    current_source <- source[target]
+    chain <- c(current_source, chain)
+  }
+  return(chain)
+}
+
+
+CalculateK <- function(genetic_ids, source, i, j, zero_based_correction) {
+  target_i <- genetic_ids[i]
+  target_j <- genetic_ids[j]
+  
+  chain_i <- ReturnTransmissionChain(source, target_i, zero_based_correction)
+  chain_j <- ReturnTransmissionChain(source, target_j, zero_based_correction)
+  #browser()
+  if((target_i %in% chain_j) || (target_j %in% chain_i)) {
+    # They are in the same transmission chain
+    if(length(chain_i) > length(chain_j)) {
+      # Chain i is longer, therefore target_j must be in chain_i
+      j_loc <- which(target_j == chain_i)
+      k <- length(chain_i) - j_loc
+    } else {
+      # Chain j is longer, therefore target_i must be in chain_j
+      i_loc <- which(target_i == chain_j)
+      k <- length(chain_j) - i_loc
+    }
+  } else {
+    k <- Inf
+  }
+  return(k)
+}
+
+## Assuming k > 1, i and j must be in the same transmission chain
+CalculateD <- function(genetic_matrix, genetic_ids, source, i, j, zero_based_correction) {
+  target_i <- genetic_ids[i]
+  target_j <- genetic_ids[j]
+  
+  chain_i <- ReturnTransmissionChain(source, target_i, zero_based_correction)
+  chain_j <- ReturnTransmissionChain(source, target_j, zero_based_correction)
+  #browser()
+  if(length(chain_i) > length(chain_j)) {
+    j_loc <- which(target_j == chain_i)
+    chain <- chain_i[j_loc:length(chain_i)]
+  } else {
+    i_loc <- which(target_i == chain_j)
+    chain <- chain_j[i_loc:length(chain_j)]
+  }
+  
+  ## Now we have a transmission chain linking the patients, list the indexes which correspond to their genetic ids
+  genetic_chain <- c()
+  for(i in 1:length(chain)) {
+    current_target <- chain[i]
+    genetic_chain <- c(genetic_chain, which(genetic_ids==current_target))
+  }
+  
+  D <- 0
+  for(i in 2:length(genetic_chain)) {
+    D <- D + genetic_matrix[genetic_chain[i-1],genetic_chain[i]]
+  }
+  return(D)
+}
+  
+
+
+
+
+
+
+
+

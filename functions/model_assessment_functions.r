@@ -3,13 +3,15 @@
 
 simulateWard_assessment <- function(epi_data,p=0.05, z=0.95, a0 = 0.000000001, a1 = 0.005, a2=0.001) {
   
-  N <- length(epi_data$t_a)
-  t_a <- epi_data$t_a
-  t_c <- rep(NA,N)
-  t_d <- epi_data$t_d
-  source <- rep(NA,N)
-  #browser()
   hcw_indicator <- epi_data$hcw_ind
+  N <- sum(hcw_indicator==0)
+  t_a <- epi_data$t_a
+  t_c <- rep(NA,length(t_a))
+  t_d <- epi_data$t_d
+  source <- rep(NA,length(t_a))
+  #browser()
+  
+  source[hcw_indicator==1] <- -1
   
   
 
@@ -20,7 +22,8 @@ simulateWard_assessment <- function(epi_data,p=0.05, z=0.95, a0 = 0.000000001, a
   
   maxD <- max(t_d)
   
-  t_c[hcw_indicator] <- epi_data$t_c[hcw_indicator]
+  #browser()
+  t_c[hcw_indicator==1] <- epi_data$t_c[hcw_indicator==1]
   
   
   
@@ -28,10 +31,10 @@ simulateWard_assessment <- function(epi_data,p=0.05, z=0.95, a0 = 0.000000001, a
   #go through each day
   for(i in 1:maxD) {
     #if(i == 28) browser()
-    susceptibles <- countSusceptible(t_a[1:N],t_c[1:N],t_d[1:N],i)
-    colonised <- countColonisedR(t_a[1:N],t_c[1:N],t_d[1:N],i)
+    susceptibles <- countSusceptible(t_a[hcw_indicator==0],t_c[hcw_indicator==0],t_d[hcw_indicator==0],i)
+    colonised <- countColonisedR(t_a[hcw_indicator==0],t_c[hcw_indicator==0],t_d[hcw_indicator==0],i)
     if(sum(hcw_indicator) > 0) {
-      colonised_hcw <- which(t_c[hcw_indicator] < i)
+      colonised_hcw <- which(t_c[hcw_indicator==1] < i)
     } else {
       colonised_hcw <- c()
     }
@@ -68,25 +71,26 @@ simulateWard_assessment <- function(epi_data,p=0.05, z=0.95, a0 = 0.000000001, a
 }
 
 
-screen_data_assessment <- function(epi_data, screening_matrix, hcw_screening_interval, z) {
-  hcw_indicator <- epi_data$hcw_indicator
+screen_data_assessment <- function(new_epi_data, epi_data, screening_matrix, hcw_screening_interval, z) {
+  #browser()
+  hcw_indicator <- epi_data$hcw_ind
   N <- length(epi_data$t_a)
   maxD <- max(epi_data$t_d)
   results_matrix <- matrix(NA, nrow=N, ncol=maxD+1)
   #browser()
   for(i in 1:N) {
     if(hcw_indicator[i]==0) {
-      test_days <- test_days <- which(screening_matrix[i,] != -1) - 1
+      test_days <- which(screening_matrix[i,] != -1) - 1
     } else {
       test_days <- seq(from=epi_data$t_a[i], to=epi_data$t_d[i], by=hcw_screening_interval)
     }
     
     
-    if(is.na(epi_data$t_c[i])){
+    if(is.na(new_epi_data$t_c[i])){
       results_matrix[i,test_days+1] <- 0
     } else {
       for(t in test_days) {
-        if(t >= epi_data$t_c[i]) {
+        if(t >= new_epi_data$t_c[i]) {
           results_matrix[i,t+1] <- rbinom(1,1,z)
         } else {
           results_matrix[i,t+1] <- 0
@@ -95,6 +99,49 @@ screen_data_assessment <- function(epi_data, screening_matrix, hcw_screening_int
     }
   }
   return(results_matrix)
+}
+
+SimulateEpiData_ModelAssessment <- function(epi_data, z, p, beta_p, beta_h, hcw_screening_interval) {
+  epi <- simulateWard_assessment(epi_data, p, z, 1e-9, beta_p, beta_h)
+  #browser()
+  screening_matrix <- screen_data_assessment(epi, epi_data, epi_data$screening_matrix, hcw_screening_interval, z)
+  
+  #browser()
+  out <- list("t_a" = epi$t_a,
+              "t_c" = epi$t_c,
+              "t_d" = epi$t_d,
+              "importations" = epi$importations,
+              "source" = epi$source,
+              "hcw_ind" = epi$hcw_ind,
+              "screening_matrix" = screening_matrix)
+  return(out)
+}
+
+
+CalculateCt_fromScreenMatrix <- function(epi_data) {
+  num_patients <- sum(epi_data$hcw_ind==0)
+  inferred_col_times <- rep(NA,num_patients)
+  for(i in 1:num_patients) {
+    positive_days <- which(epi_data$screening_matrix[i,] == 1) - 1
+    if(length(positive_days)>0) {
+      inferred_col_times[i] <- positive_days[1]
+    }
+  }
+  
+  maxD <- max(epi_data$t_d)
+  C <- sapply(0:maxD, function(x) CalculateNumColonisedOnDay(inferred_col_times, epi_data$t_d, epi_data$hcw_ind, x))
+  return(C)
+}
+
+CalculateNumberPatientsToEverHavePositiveSwab <- function(epi_data) {
+  return(sum(apply(epi_data$screening_matrix, 1, function(x) ifelse(sum(x == 1, na.rm=T) > 0,T,F))))
+}
+
+CalculateNumColonisedOnDay <- function(t_c, t_d, hcw_ind, t) {
+  #browser()
+  t_d <- t_d[!hcw_ind]
+  num_colonised <- sum(t_c < t & t_d > t & !is.na(t_c) & t_c != -1)
+  return(num_colonised)
 }
 
 
@@ -186,7 +233,8 @@ CalculateTotalEuclidianDistance <- function(x_points, y_points) {
   return(total_distance)
 }
 
-genetic_matrix_assessment_marginal_calculation <- function(true_matrix, simulated_matrices) {
+genetic_matrix_assessment_marginal_calculation <- function(true_matrix, simulated_matrices, variant_numbers) {
+  #browser()
   k <- nrow(true_matrix)
   p_value_matrix <- matrix(NA,nrow=k, ncol=k)
   for(j in 2:k) {
@@ -196,6 +244,10 @@ genetic_matrix_assessment_marginal_calculation <- function(true_matrix, simulate
       p_value_matrix[i,j] <- sum(simulated_values > true_value)
     }
   }
+  #browser()
+  diag(p_value_matrix) <- rep(NA,length(diag(p_value_matrix)))
+  ordered_variants <- order(variant_numbers)
+  p_value_matrix <- p_value_matrix[ordered_variants,ordered_variants]
   return(p_value_matrix/length(simulated_matrices))
 }
 
@@ -249,6 +301,7 @@ GeneticMatrix_MDS <- function(true_matrix, distance_matrices) {
   #     main="Metric MDS", type="n")
   #text(x, y, cex=.7) 
   
+  max_iter <- length(distance_matrices)
   ## perform MDS for the simulated distance matrices
   x_points <- vector('list', max_iter)
   y_points <- vector('list', max_iter)
